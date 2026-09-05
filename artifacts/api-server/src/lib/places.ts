@@ -52,6 +52,15 @@ const ACTIVITY_TYPES: Record<Activity, string[]> = {
   party: ["night_club", "bar"],
 };
 
+const ACTIVITY_QUERIES: Record<Activity, string> = {
+  food: "restaurants and cafes",
+  movie: "cinemas and movie theaters",
+  games: "arcades bowling and game cafes",
+  outdoors: "parks trails and outdoor activities",
+  chill: "cafes spas and relaxing places",
+  party: "bars clubs and live music venues",
+};
+
 function placeTypesFor(activity: Activity, preferences: VenueSearchPreferences[]): string[] {
   const hardNos = new Set(preferences.flatMap((preference) => preference.hardNos));
   if (activity === "food" && hardNos.has("spicy-food")) return ["cafe", "bakery"];
@@ -120,16 +129,17 @@ export async function searchNearbyVenues(
   if (cached && cached.expires > Date.now()) return { status: "nearby-results", plans: cached.plans };
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 3500);
+  const timeout = setTimeout(() => controller.abort(), 5000);
   try {
-    const response = await fetch("https://places.googleapis.com/v1/places:searchNearby", {
+    const headers = {
+      "Content-Type": "application/json",
+      "X-Goog-Api-Key": key,
+      "X-Goog-FieldMask": "places.id,places.displayName,places.formattedAddress,places.primaryTypeDisplayName,places.location,places.rating,places.currentOpeningHours.openNow,places.googleMapsUri,places.priceLevel",
+    };
+    const nearbyResponse = await fetch("https://places.googleapis.com/v1/places:searchNearby", {
       method: "POST",
       signal: controller.signal,
-      headers: {
-        "Content-Type": "application/json",
-        "X-Goog-Api-Key": key,
-        "X-Goog-FieldMask": "places.id,places.displayName,places.formattedAddress,places.primaryTypeDisplayName,places.location,places.rating,places.currentOpeningHours.openNow,places.googleMapsUri,places.priceLevel",
-      },
+      headers,
       body: JSON.stringify({
         includedPrimaryTypes: placeTypesFor(activity, preferences),
         maxResultCount: MAX_RESULTS,
@@ -137,8 +147,29 @@ export async function searchNearbyVenues(
         locationRestriction: { circle: { center: { latitude: lat, longitude: lng }, radius } },
       }),
     });
-    if (!response.ok) return { status: "fallback-provider-unavailable", plans: [] };
-    const data = await response.json() as { places?: GooglePlace[] };
+    if (!nearbyResponse.ok) return { status: "fallback-provider-unavailable", plans: [] };
+    let data = await nearbyResponse.json() as { places?: GooglePlace[] };
+
+    if (!data.places?.length) {
+      const hardNos = new Set(preferences.flatMap((preference) => preference.hardNos));
+      const textQuery = activity === "food" && hardNos.has("spicy-food")
+        ? "cafes and bakeries"
+        : ACTIVITY_QUERIES[activity];
+      const textResponse = await fetch("https://places.googleapis.com/v1/places:searchText", {
+        method: "POST",
+        signal: controller.signal,
+        headers,
+        body: JSON.stringify({
+          textQuery,
+          maxResultCount: MAX_RESULTS,
+          rankPreference: "DISTANCE",
+          locationBias: { circle: { center: { latitude: lat, longitude: lng }, radius } },
+        }),
+      });
+      if (!textResponse.ok) return { status: "fallback-provider-unavailable", plans: [] };
+      data = await textResponse.json() as { places?: GooglePlace[] };
+    }
+
     const plans = (data.places ?? []).flatMap((place): VenuePlan[] => {
       const placeLat = place.location?.latitude;
       const placeLng = place.location?.longitude;
