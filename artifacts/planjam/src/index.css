@@ -148,8 +148,12 @@ input::placeholder { color: #9b9ca6; opacity: 1; }
 @keyframes floaty { 0%,100% { transform: translateY(0) rotate(-2deg); } 50% { transform: translateY(-8px) rotate(2deg); } }
 @keyframes confetti-fall { 0% { opacity: 0; transform: translateY(-30px) rotate(0) scale(.7); } 12% { opacity: 1; } 100% { opacity: 0; transform: translateY(330px) rotate(480deg) scale(1); } }
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; }
-  .floaty { transform: none !important; }
+  *, *::before, *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+  .floaty, .page-in, .rise-in { transform: none !important; }
 }
 @media (max-width: 767px) {
   .auth-frame { grid-template-columns: 1fr; gap: 1.5rem; }

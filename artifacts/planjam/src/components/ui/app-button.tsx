@@ -29,7 +29,7 @@ export function Button({
       onClick={onClick}
       disabled={disabled}
       data-testid={testId}
-      className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-bold transition-[transform,background-color,border-color,box-shadow] duration-200 disabled:cursor-not-allowed disabled:opacity-45 disabled:shadow-none ${styles[variant]} ${className}`}
+      className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-full px-5 py-3 text-sm font-bold transition-[transform,background-color,border-color,box-shadow] duration-200 focus-visible:outline-[3px] focus-visible:outline-[#F26F52] focus-visible:outline-offset-[3px] disabled:cursor-not-allowed disabled:opacity-45 disabled:shadow-none ${styles[variant]} ${className}`}
     >
       {children}
     </button>

@@ -182,6 +182,30 @@ class CdpPage {
     });
   }
 
+  async setReducedMotion(reduced: boolean): Promise<void> {
+    await this.send("Emulation.setEmulatedMedia", {
+      features: [{ name: "prefers-reduced-motion", value: reduced ? "reduce" : "no-preference" }],
+    });
+  }
+
+  async tab(): Promise<void> {
+    await this.send("Input.dispatchKeyEvent", {
+      type: "keyDown",
+      key: "Tab",
+      code: "Tab",
+      windowsVirtualKeyCode: 9,
+      nativeVirtualKeyCode: 9,
+    });
+    await this.send("Input.dispatchKeyEvent", {
+      type: "keyUp",
+      key: "Tab",
+      code: "Tab",
+      windowsVirtualKeyCode: 9,
+      nativeVirtualKeyCode: 9,
+    });
+    await sleep(50);
+  }
+
   async waitFor(selector: string, timeout = 8000): Promise<void> {
     const started = Date.now();
     while (Date.now() - started < timeout) {
@@ -323,6 +347,81 @@ async function assertVisible(page: CdpPage, selector: string, label: string): Pr
   assert(state.found && state.visible, `${label} did not render ${selector}`);
 }
 
+async function assertKeyboardFocus(page: CdpPage, label: string, selectors: string[]): Promise<void> {
+  await page.run(() => {
+    document.activeElement?.blur();
+    window.scrollTo(0, 0);
+  });
+
+  const reached = new Set<string>();
+  let previousFocus = "";
+  let repeatedFocusCount = 0;
+  const trail: string[] = [];
+  let tabsAfterAllRequiredControls = 0;
+
+  for (let attempt = 0; attempt < 80 && tabsAfterAllRequiredControls < 3; attempt += 1) {
+    await page.tab();
+    const focus = await page.run<{ identifier: string; matches: string[]; visiblyOutlined: boolean }>((expectedSelectors: string[]) => {
+      const element = document.activeElement;
+      if (!element || element === document.body) {
+        return { identifier: "", matches: [], visiblyOutlined: false };
+      }
+      const styles = window.getComputedStyle(element);
+      const outlineWidth = Number.parseFloat(styles.outlineWidth);
+      return {
+        identifier: element.getAttribute("data-testid") || `${element.tagName.toLowerCase()}:${element.textContent?.trim().slice(0, 30) ?? ""}`,
+        matches: expectedSelectors.filter((selector) => element.matches(selector)),
+        visiblyOutlined: styles.outlineStyle !== "none" && outlineWidth > 0 && styles.outlineColor !== "rgba(0, 0, 0, 0)",
+      };
+    }, selectors);
+
+    if (!focus.identifier) {
+      assert(reached.size === selectors.length, `${label} lost focus before reaching every required control (focus may be trapped)`);
+      break;
+    }
+    trail.push(focus.identifier);
+    if (focus.identifier === previousFocus) {
+      repeatedFocusCount += 1;
+    } else {
+      repeatedFocusCount = 0;
+    }
+    assert(repeatedFocusCount < 2, `${label} repeated ${focus.identifier} instead of advancing focus: ${trail.join(" → ")}`);
+
+    for (const selector of focus.matches) {
+      reached.add(selector);
+      assert(focus.visiblyOutlined, `${label} focus on ${selector} is not visibly outlined`);
+    }
+    previousFocus = focus.identifier;
+    if (reached.size === selectors.length) tabsAfterAllRequiredControls += 1;
+  }
+
+  assert(reached.size === selectors.length, `${label} did not reach every required control. Reached ${[...reached].join(", ") || "none"}; trail: ${trail.join(" → ")}`);
+  console.log(`PASS ${label} keyboard focus`);
+}
+
+async function assertReducedMotion(page: CdpPage, label: string, selectors: string[]): Promise<void> {
+  const states = await page.run<Array<{ selector: string; found: boolean; visible: boolean; animationName: string; transitionDuration: string }>>((expectedSelectors: string[]) => expectedSelectors.map((selector) => {
+    const element = document.querySelector(selector);
+    if (!element) return { selector, found: false, visible: false, animationName: "", transitionDuration: "" };
+    const rect = element.getBoundingClientRect();
+    const styles = window.getComputedStyle(element);
+    return {
+      selector,
+      found: true,
+      visible: rect.width > 0 && rect.height > 0 && styles.display !== "none" && styles.visibility !== "hidden",
+      animationName: styles.animationName,
+      transitionDuration: styles.transitionDuration,
+    };
+  }), selectors);
+
+  for (const state of states) {
+    assert(state.found && state.visible, `${label} hid or failed to render ${state.selector}`);
+    assert(state.animationName === "none", `${label} left ${state.selector} animated (${state.animationName})`);
+    assert(state.transitionDuration === "0s", `${label} left ${state.selector} transitioning (${state.transitionDuration})`);
+  }
+  console.log(`PASS ${label} motion disabled without hiding content`);
+}
+
 async function assertAcrossViewports(
   page: CdpPage,
   label: string,
@@ -394,6 +493,8 @@ async function main(): Promise<void> {
       await assertVisible(page, '[data-testid="input-host-name"]', "landing page");
       await assertVisible(page, '[data-testid="button-start-planning"]', "landing page");
     });
+    await page.navigate(`${webOrigin}/`);
+    await assertKeyboardFocus(page, "landing page", ['[data-testid="button-start-planning"]']);
 
     await assertAcrossViewports(page, "join room", async (width) => {
       await page.navigate(`${webOrigin}/room/${entryRoom.slug}`);
@@ -429,6 +530,13 @@ async function main(): Promise<void> {
       await assertVisible(page, '[data-testid="status-next-steps"]', "preferences phase next steps");
     });
 
+    await page.navigate(`${webOrigin}/room/${preferencesRoom.slug}`);
+    await page.waitFor('[data-testid="option-activity-food"]');
+    await assertKeyboardFocus(page, "preferences phase", [
+      '[data-testid="button-save-preferences"]',
+      '[data-testid="button-copy-link"]',
+    ]);
+
     currentCheckLabel = `copy-link feedback @ ${currentViewport}px`;
     await page.click('[data-testid="button-copy-link"]');
     await page.waitFor('[data-testid="status-copy-link"]');
@@ -445,6 +553,11 @@ async function main(): Promise<void> {
       await assertVisible(page, '[data-testid="roster-readiness-summary"]', "shortlist phase readiness");
       await assertVisible(page, '[data-testid="button-open-voting"]', "shortlist phase");
     });
+    await page.navigate(`${webOrigin}/room/${shortlistRoom.slug}`);
+    await page.waitFor('[data-testid^="card-plan-"]');
+    await assertKeyboardFocus(page, "shortlist phase", [
+      '[data-testid="button-open-voting"]',
+    ]);
 
     await setRoomTokens(page, votingRoom);
     await assertAcrossViewports(page, "voting phase", async (width) => {
@@ -457,6 +570,11 @@ async function main(): Promise<void> {
       const pressed = await page.run<boolean>(() => document.querySelector('[data-testid^="vote-love-"]')?.getAttribute("aria-pressed") === "true");
       assert(pressed, "vote feedback did not mark the selected vote as pressed");
     });
+    await page.navigate(`${webOrigin}/room/${votingRoom.slug}`);
+    await page.waitFor('[data-testid^="vote-plan-"]');
+    await assertKeyboardFocus(page, "voting phase", [
+      '[data-testid^="vote-love-"]',
+    ]);
 
     await setRoomTokens(page, finalRoom);
     await assertAcrossViewports(page, "final phase", async (width) => {
@@ -468,6 +586,21 @@ async function main(): Promise<void> {
       await assertVisible(page, '[data-testid="final-starting-point"]', "final phase recap");
       await assertVisible(page, '[data-testid="room-capacity-message"]', "final phase invite card");
     });
+    await page.navigate(`${webOrigin}/room/${finalRoom.slug}`);
+    await page.waitFor('[data-testid="text-winning-plan"]');
+    await assertKeyboardFocus(page, "final phase recap", [
+      '[data-testid^="button-roster-member-"]',
+      '[data-testid="button-copy-link"]',
+    ]);
+
+    await page.setReducedMotion(true);
+    await page.navigate(`${webOrigin}/`);
+    await assertReducedMotion(page, "landing page reduced motion", [".page-in", ".floaty"]);
+    await setRoomTokens(page, finalRoom);
+    await page.navigate(`${webOrigin}/room/${finalRoom.slug}`);
+    await page.waitFor('[data-testid="text-winning-plan"]');
+    await assertVisible(page, '[data-testid="text-winning-plan"]', "reduced-motion final phase");
+    await assertReducedMotion(page, "final celebration reduced motion", [".page-in", ".rise-in", ".confetti-piece"]);
 
     if (browserIssues.length > 0) {
       throw new Error(`Browser issues detected:\n${browserIssues.map((issue) => `- ${issue}`).join("\n")}`);

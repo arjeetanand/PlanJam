@@ -48,6 +48,7 @@ export function Roster({
                 aria-expanded={isExpanded}
                 aria-controls={p.selection ? `selection-${p.id}` : undefined}
                 onClick={() => setExpandedParticipantId(isExpanded ? null : p.id)}
+                data-testid={`button-roster-member-${p.id}`}
                 className={`flex w-full min-w-0 items-center justify-between gap-2 text-left ${p.selection ? 'cursor-pointer' : 'cursor-default'}`}
               >
                 <span className="flex min-w-0 items-center gap-2">
