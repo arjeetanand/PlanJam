@@ -52,7 +52,7 @@ export function ShortlistPhase({ room }: { room: RoomState }) {
             <SectionTitle 
               eyebrow="02 / group sync" 
               title="Look at that overlap." 
-              body="We crunched everyone's preferences and found the sweet spot." 
+               body="We weighted the group’s strongest signals, kept minority picks in the mix, and protected every hard no." 
             />
             <div className="rounded-3xl border-2 border-[#27304C] bg-[#27304C] p-5 text-[#FFF7E8] shadow-[6px_6px_0_#F26F52]">
               <div className="flex items-center justify-between">
@@ -100,7 +100,9 @@ export function ShortlistPhase({ room }: { room: RoomState }) {
               </div>
               <span className="hidden text-xs text-[#8A8D9B] sm:block">ranked by group match</span>
             </div>
-            <div className="mb-4 rounded-xl border border-[#D9D7D0] bg-[#FFFDF5] px-4 py-3 text-xs text-[#6A6E80]">
+             <div className="mb-4 rounded-xl border border-[#D9D7D0] bg-[#FFFDF5] px-4 py-3 text-xs leading-5 text-[#6A6E80]">
+              <p>Ranked by majority activity, practical budget, and distance fit. Hard NOs are always excluded; a minority preference can still appear as a fair compromise.</p>
+              <p className="mt-1">
               {room.venueStatus === 'nearby-results'
                 ? 'Real nearby venues are mixed with curated backups when needed.'
                 : room.venueStatus === 'fallback-provider-unavailable'
@@ -108,6 +110,7 @@ export function ShortlistPhase({ room }: { room: RoomState }) {
                   : room.venueStatus === 'fallback-no-results'
                     ? 'No suitable nearby venues were found, so these are curated group matches.'
                     : 'No room location was shared, so these are curated group matches.'}
+              </p>
             </div>
             <div className="space-y-4">
               {room.shortlist.map((plan, index) => {

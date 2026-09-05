@@ -2,12 +2,16 @@ import { createHash, randomBytes } from "node:crypto";
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { db, participantsTable, preferencesTable, roomsTable, votesTable } from "@workspace/db";
 import { searchNearbyVenues, type VenuePlan } from "./places";
+import {
+  type Activity,
+  type Budget,
+  type Distance,
+  type HardNo,
+  type PreferenceInput,
+  hasCatalogHardNoConflict,
+  scoreGroupMatch,
+} from "./recommendation-scoring";
 
-type Activity = "food" | "movie" | "games" | "outdoors" | "chill" | "party";
-type HardNo = "crowds" | "long-drives" | "loud-venues" | "spicy-food" | "late-nights";
-type Budget = "500" | "1000" | "1500" | "2000-plus";
-type Distance = "nearby" | "5km" | "10km" | "anywhere";
-type PreferenceInput = { activity: Activity; budget: Budget; distance: Distance; hardNos: HardNo[] };
 type VoteValue = "love" | "works" | "no";
 type CatalogPlan = { id: string; name: string; detail: string; category: Activity; budget: Budget; distance: Distance; traits: HardNo[] };
 
@@ -62,16 +66,14 @@ export async function participantForToken(roomId: string, token?: string) {
 
 function recommendations(prefs: PreferenceInput[]) {
   return catalog
-    .filter((plan) => prefs.every((preference) => preference.hardNos.every((hardNo) => !plan.traits.includes(hardNo))))
+    .filter((plan) => !hasCatalogHardNoConflict(plan.traits, prefs))
     .map((plan) => {
-      let score = 0;
-      const reasons: string[] = [];
-      for (const preference of prefs) {
-        if (preference.activity === plan.category) { score += 3; reasons.push("matches an activity preference"); }
-        if (preference.budget === plan.budget) { score += 1; reasons.push("fits the group budget"); }
-        if (preference.distance === plan.distance) { score += 1; reasons.push("fits the group distance"); }
-      }
-      return { id: plan.id, name: plan.name, detail: plan.detail, category: plan.category, budget: plan.budget, distance: plan.distance, matchPercent: Math.round((score / (prefs.length * 5)) * 100), reasons: [...new Set(reasons)].slice(0, 2) };
+      const scored = scoreGroupMatch({
+        activity: plan.category,
+        budget: plan.budget,
+        distanceMeters: { nearby: 2000, "5km": 5000, "10km": 10000, anywhere: 20000 }[plan.distance],
+      }, prefs);
+      return { id: plan.id, name: plan.name, detail: plan.detail, category: plan.category, budget: plan.budget, distance: plan.distance, ...scored };
     })
     .sort((a, b) => b.matchPercent - a.matchPercent || a.id.localeCompare(b.id))
     .slice(0, 3);

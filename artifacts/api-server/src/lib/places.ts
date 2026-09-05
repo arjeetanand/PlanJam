@@ -1,16 +1,15 @@
 import { createHash } from "node:crypto";
+import {
+  groupProfile,
+  hasVenueHardNoConflict,
+  scoreGroupMatch,
+  type Activity,
+  type Budget,
+  type Distance,
+  type PreferenceInput,
+} from "./recommendation-scoring";
 
-type Activity = "food" | "movie" | "games" | "outdoors" | "chill" | "party";
-type HardNo = "crowds" | "long-drives" | "loud-venues" | "spicy-food" | "late-nights";
-type Budget = "500" | "1000" | "1500" | "2000-plus";
-type Distance = "nearby" | "5km" | "10km" | "anywhere";
-
-export type VenueSearchPreferences = {
-  activity: Activity;
-  budget: Budget;
-  distance: Distance;
-  hardNos: HardNo[];
-};
+export type VenueSearchPreferences = PreferenceInput;
 
 export type VenuePlan = {
   id: string;
@@ -204,29 +203,24 @@ export async function searchNearbyVenues(
       if (!place.id || !place.displayName?.text || placeLat === undefined || placeLng === undefined || !mapsUrl) return [];
       const meters = distanceMeters(lat, lng, placeLat, placeLng);
       if (meters > radius) return [];
-      const placeBudget = PRICE_LEVEL[place.priceLevel ?? ""] ?? preferences[0].budget;
-      const activityMatches = preferences.filter((preference) => preference.activity === activity).length;
-      const budgetMatches = preferences.filter((preference) => preference.budget === placeBudget).length;
-      const distanceMatches = preferences.filter((preference) => {
-        const max = { nearby: 2000, "5km": 5000, "10km": 10000, anywhere: 20000 }[preference.distance];
-        return meters <= max;
-      }).length;
-      const ratingBonus = place.rating ? Math.min(10, Math.round(place.rating * 2)) : 0;
-      const score = Math.min(99, Math.round(((activityMatches * 3 + budgetMatches + distanceMatches) / (preferences.length * 5)) * 90) + ratingBonus);
-      const reasons = [
-        activityMatches ? `matches ${activityMatches === preferences.length ? "everyone's" : "the group's"} activity pick` : "",
-        distanceMatches === preferences.length ? "within everyone's distance" : `${Math.max(1, Math.round(meters / 100) / 10)} km away`,
-        place.rating ? `${place.rating.toFixed(1)} rating` : "",
-      ].filter(Boolean).slice(0, 2);
+      if (hasVenueHardNoConflict(
+        activity,
+        place.primaryTypeDisplayName?.text ?? "",
+        place.displayName.text,
+        meters,
+        preferences,
+      )) return [];
+      const placeBudget = PRICE_LEVEL[place.priceLevel ?? ""] as Budget | undefined;
+      const scored = scoreGroupMatch({ activity, budget: placeBudget, distanceMeters: meters }, preferences);
       return [{
         id: `venue-google-${place.id}`,
         name: place.displayName.text,
         detail: place.primaryTypeDisplayName?.text ?? activity,
         category: activity,
-        budget: placeBudget,
+        budget: placeBudget ?? groupProfile(preferences).majorityBudget,
         distance: meters <= 2000 ? "nearby" : meters <= 5000 ? "5km" : meters <= 10000 ? "10km" : "anywhere",
-        matchPercent: score,
-        reasons,
+        matchPercent: scored.matchPercent,
+        reasons: scored.reasons,
         venue: {
           category: place.primaryTypeDisplayName?.text ?? activity,
           address: place.formattedAddress ?? "Address available in Maps",
