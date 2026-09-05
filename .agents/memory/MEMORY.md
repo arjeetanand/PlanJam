@@ -1,0 +1,1 @@
+- [API codegen Zod compatibility](api-codegen-zod-compatibility.md) — URI formats emit a Zod 4 helper; use strict URL patterns until validators consistently resolve Zod 4.

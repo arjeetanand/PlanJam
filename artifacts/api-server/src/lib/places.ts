@@ -52,6 +52,12 @@ const ACTIVITY_TYPES: Record<Activity, string[]> = {
   party: ["night_club", "bar"],
 };
 
+function placeTypesFor(activity: Activity, preferences: VenueSearchPreferences[]): string[] {
+  const hardNos = new Set(preferences.flatMap((preference) => preference.hardNos));
+  if (activity === "food" && hardNos.has("spicy-food")) return ["cafe", "bakery"];
+  return ACTIVITY_TYPES[activity];
+}
+
 const PRICE_LEVEL: Record<string, Budget> = {
   PRICE_LEVEL_FREE: "500",
   PRICE_LEVEL_INEXPENSIVE: "500",
@@ -125,7 +131,7 @@ export async function searchNearbyVenues(
         "X-Goog-FieldMask": "places.id,places.displayName,places.formattedAddress,places.primaryTypeDisplayName,places.location,places.rating,places.currentOpeningHours.openNow,places.googleMapsUri,places.priceLevel",
       },
       body: JSON.stringify({
-        includedPrimaryTypes: ACTIVITY_TYPES[activity],
+        includedPrimaryTypes: placeTypesFor(activity, preferences),
         maxResultCount: MAX_RESULTS,
         rankPreference: "POPULARITY",
         locationRestriction: { circle: { center: { latitude: lat, longitude: lng }, radius } },

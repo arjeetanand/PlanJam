@@ -71,17 +71,17 @@ export function HomePage() {
           </p>
           
           <form onSubmit={handleStart} className="mt-9 flex flex-col gap-4">
-            <div className="flex items-center gap-2">
+            <div className="flex w-full max-w-md flex-col gap-2 sm:flex-row sm:items-center">
               <input 
                 type="text" 
                 placeholder="Your name" 
                 value={name}
                 onChange={e => setName(e.target.value)}
                 required={!isSignedIn}
-                className="rounded-full border border-[#D9D7D0] bg-[#FFFDF5] px-4 py-3.5 text-base font-bold text-[#27304C] outline-none focus:border-[#F26F52] focus:ring-2 focus:ring-[#F26F52]/20 sm:w-48"
+                className="w-full min-w-0 rounded-full border border-[#D9D7D0] bg-[#FFFDF5] px-4 py-3.5 text-base font-bold text-[#27304C] outline-none focus:border-[#F26F52] focus:ring-2 focus:ring-[#F26F52]/20 sm:w-48"
                 data-testid="input-host-name"
               />
-              <Button type="submit" disabled={createRoom.isPending} testId="button-start-planning" className="px-7 py-3.5 text-base whitespace-nowrap">
+              <Button type="submit" disabled={createRoom.isPending} testId="button-start-planning" className="w-full px-7 py-3.5 text-base whitespace-nowrap sm:w-auto">
                 {createRoom.isPending ? 'Starting...' : 'Start a room'} <ArrowRight size={18} strokeWidth={2.5} />
               </Button>
             </div>
