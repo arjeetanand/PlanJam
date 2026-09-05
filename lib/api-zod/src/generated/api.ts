@@ -53,7 +53,13 @@ export const CreateRoomResponse = zod.object({
   "id": zod.string(),
   "name": zod.string(),
   "preferencesSubmitted": zod.boolean(),
-  "votesSubmitted": zod.boolean()
+  "votesSubmitted": zod.boolean(),
+  "selection": zod.union([zod.object({
+  "activity": zod.enum(['food', 'movie', 'games', 'outdoors', 'chill', 'party']),
+  "budget": zod.enum(['500', '1000', '1500', '2000-plus']),
+  "distance": zod.enum(['nearby', '5km', '10km', 'anywhere']),
+  "hardNos": zod.array(zod.enum(['crowds', 'long-drives', 'loud-venues', 'spicy-food', 'late-nights']))
+}),zod.null()])
 })),
   "shortlist": zod.array(zod.object({
   "id": zod.string(),
@@ -127,7 +133,13 @@ export const JoinRoomResponse = zod.object({
   "id": zod.string(),
   "name": zod.string(),
   "preferencesSubmitted": zod.boolean(),
-  "votesSubmitted": zod.boolean()
+  "votesSubmitted": zod.boolean(),
+  "selection": zod.union([zod.object({
+  "activity": zod.enum(['food', 'movie', 'games', 'outdoors', 'chill', 'party']),
+  "budget": zod.enum(['500', '1000', '1500', '2000-plus']),
+  "distance": zod.enum(['nearby', '5km', '10km', 'anywhere']),
+  "hardNos": zod.array(zod.enum(['crowds', 'long-drives', 'loud-venues', 'spicy-food', 'late-nights']))
+}),zod.null()])
 })),
   "shortlist": zod.array(zod.object({
   "id": zod.string(),
@@ -192,7 +204,13 @@ export const GetRoomStateResponse = zod.object({
   "id": zod.string(),
   "name": zod.string(),
   "preferencesSubmitted": zod.boolean(),
-  "votesSubmitted": zod.boolean()
+  "votesSubmitted": zod.boolean(),
+  "selection": zod.union([zod.object({
+  "activity": zod.enum(['food', 'movie', 'games', 'outdoors', 'chill', 'party']),
+  "budget": zod.enum(['500', '1000', '1500', '2000-plus']),
+  "distance": zod.enum(['nearby', '5km', '10km', 'anywhere']),
+  "hardNos": zod.array(zod.enum(['crowds', 'long-drives', 'loud-venues', 'spicy-food', 'late-nights']))
+}),zod.null()])
 })),
   "shortlist": zod.array(zod.object({
   "id": zod.string(),
@@ -262,7 +280,13 @@ export const UpdateRoomPreferencesResponse = zod.object({
   "id": zod.string(),
   "name": zod.string(),
   "preferencesSubmitted": zod.boolean(),
-  "votesSubmitted": zod.boolean()
+  "votesSubmitted": zod.boolean(),
+  "selection": zod.union([zod.object({
+  "activity": zod.enum(['food', 'movie', 'games', 'outdoors', 'chill', 'party']),
+  "budget": zod.enum(['500', '1000', '1500', '2000-plus']),
+  "distance": zod.enum(['nearby', '5km', '10km', 'anywhere']),
+  "hardNos": zod.array(zod.enum(['crowds', 'long-drives', 'loud-venues', 'spicy-food', 'late-nights']))
+}),zod.null()])
 })),
   "shortlist": zod.array(zod.object({
   "id": zod.string(),
@@ -329,7 +353,13 @@ export const UpdateRoomVotesResponse = zod.object({
   "id": zod.string(),
   "name": zod.string(),
   "preferencesSubmitted": zod.boolean(),
-  "votesSubmitted": zod.boolean()
+  "votesSubmitted": zod.boolean(),
+  "selection": zod.union([zod.object({
+  "activity": zod.enum(['food', 'movie', 'games', 'outdoors', 'chill', 'party']),
+  "budget": zod.enum(['500', '1000', '1500', '2000-plus']),
+  "distance": zod.enum(['nearby', '5km', '10km', 'anywhere']),
+  "hardNos": zod.array(zod.enum(['crowds', 'long-drives', 'loud-venues', 'spicy-food', 'late-nights']))
+}),zod.null()])
 })),
   "shortlist": zod.array(zod.object({
   "id": zod.string(),
@@ -396,7 +426,13 @@ export const UpdateRoomPhaseResponse = zod.object({
   "id": zod.string(),
   "name": zod.string(),
   "preferencesSubmitted": zod.boolean(),
-  "votesSubmitted": zod.boolean()
+  "votesSubmitted": zod.boolean(),
+  "selection": zod.union([zod.object({
+  "activity": zod.enum(['food', 'movie', 'games', 'outdoors', 'chill', 'party']),
+  "budget": zod.enum(['500', '1000', '1500', '2000-plus']),
+  "distance": zod.enum(['nearby', '5km', '10km', 'anywhere']),
+  "hardNos": zod.array(zod.enum(['crowds', 'long-drives', 'loud-venues', 'spicy-food', 'late-nights']))
+}),zod.null()])
 })),
   "shortlist": zod.array(zod.object({
   "id": zod.string(),

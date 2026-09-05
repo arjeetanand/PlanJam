@@ -108,12 +108,24 @@ export async function roomState(room: typeof roomsTable.$inferSelect, participan
   });
   const viewer = await participantForToken(room.id, participantToken);
   const isHost = !!hostToken && hashToken(hostToken) === room.hostTokenHash;
+  const canViewParticipantSelections = !!viewer || isHost;
   const winner = room.phase === "final" && voteTotals.length
     ? [...voteTotals].sort((a, b) => b.score - a.score || a.planId.localeCompare(b.planId))[0].planId
     : null;
   return {
     slug: room.slug, phase: room.phase, expiresAt: room.expiresAt, capacity: ROOM_CAPACITY,
-    participants: participants.map((p) => ({ id: p.id, name: p.name, preferencesSubmitted: preferences.some((pref) => pref.participantId === p.id), votesSubmitted: room.shortlist.length > 0 && votes.filter((vote) => vote.participantId === p.id).length === room.shortlist.length })),
+    participants: participants.map((p) => {
+      const preference = preferences.find((pref) => pref.participantId === p.id);
+      return {
+        id: p.id,
+        name: p.name,
+        preferencesSubmitted: !!preference,
+        votesSubmitted: room.shortlist.length > 0 && votes.filter((vote) => vote.participantId === p.id).length === room.shortlist.length,
+        selection: canViewParticipantSelections && preference
+          ? { activity: preference.activity, budget: preference.budget, distance: preference.distance, hardNos: preference.hardNos }
+          : null,
+      };
+    }),
     shortlist, voteTotals, winner, viewerParticipantId: viewer?.id ?? null, isHost: isHost || null,
     viewerPreferences: viewer ? preferences.find((pref) => pref.participantId === viewer.id) ?? null : null,
     viewerVotes: viewer ? Object.fromEntries(votes.filter((vote) => vote.participantId === viewer.id).map((vote) => [vote.planId, vote.vote])) : {},

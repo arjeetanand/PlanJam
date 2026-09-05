@@ -5,10 +5,12 @@
  * PlanJam anonymous shared-room API
  * OpenAPI spec version: 0.1.0
  */
+import type { ParticipantSelection } from './participantSelection';
 
 export interface Participant {
   id: string;
   name: string;
   preferencesSubmitted: boolean;
   votesSubmitted: boolean;
+  selection: ParticipantSelection | null;
 }

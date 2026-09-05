@@ -155,8 +155,24 @@ components:
       properties: { phase: { type: string, enum: [shortlist, voting, final] } }
     Participant:
       type: object
-      required: [id, name, preferencesSubmitted, votesSubmitted]
-      properties: { id: { type: string }, name: { type: string }, preferencesSubmitted: { type: boolean }, votesSubmitted: { type: boolean } }
+      required: [id, name, preferencesSubmitted, votesSubmitted, selection]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        preferencesSubmitted: { type: boolean }
+        votesSubmitted: { type: boolean }
+        selection:
+          oneOf:
+            - $ref: "#/components/schemas/ParticipantSelection"
+            - type: "null"
+    ParticipantSelection:
+      type: object
+      required: [activity, budget, distance, hardNos]
+      properties:
+        activity: { type: string, enum: [food, movie, games, outdoors, chill, party] }
+        budget: { type: string, enum: ["500", "1000", "1500", "2000-plus"] }
+        distance: { type: string, enum: [nearby, "5km", "10km", anywhere] }
+        hardNos: { type: array, items: { type: string, enum: [crowds, long-drives, loud-venues, spicy-food, late-nights] } }
     Plan:
       type: object
       required: [id, name, detail, category, matchPercent, reasons]

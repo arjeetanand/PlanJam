@@ -1,7 +1,11 @@
+import { useState } from 'react';
 import type { Participant } from '@workspace/api-client-react';
-import { CheckCircle2, Clock, Crown } from 'lucide-react';
+import { CheckCircle2, ChevronDown, Clock, Crown } from 'lucide-react';
+import { activityOptions, budgetOptions, distanceOptions, noOptions } from '@/lib/constants';
 
 export function Roster({ participants, capacity }: { participants: Participant[]; capacity: number }) {
+  const [expandedParticipantId, setExpandedParticipantId] = useState<string | null>(null);
+
   return (
     <div className="rounded-3xl border border-[#D9D7D0] bg-[#FFF7E8]/80 p-5">
       <div className="mb-4 flex items-center justify-between gap-3">
@@ -11,24 +15,59 @@ export function Roster({ participants, capacity }: { participants: Participant[]
       <div className="grid gap-2 sm:grid-cols-2">
         {participants.map((p, index) => {
           const isCreator = index === 0;
+          const isExpanded = expandedParticipantId === p.id && !!p.selection;
           return (
-            <div key={p.id} className="flex min-w-0 items-center justify-between gap-2 rounded-xl border border-[#D9D7D0] bg-[#FFFDF5] p-3 shadow-sm">
-              <div className="flex items-center gap-2">
-                <span className={`grid h-8 w-8 place-items-center rounded-full text-xs font-bold text-[#27304C] ${isCreator ? 'bg-[#FFE48B]' : 'bg-[#DCE8FF]'}`}>
-                  {p.name.slice(0, 1).toUpperCase()}
+            <div key={p.id} className="min-w-0 rounded-xl border border-[#D9D7D0] bg-[#FFFDF5] p-3 shadow-sm">
+              <button
+                type="button"
+                disabled={!p.selection}
+                aria-expanded={isExpanded}
+                aria-controls={p.selection ? `selection-${p.id}` : undefined}
+                onClick={() => setExpandedParticipantId(isExpanded ? null : p.id)}
+                className={`flex w-full min-w-0 items-center justify-between gap-2 text-left ${p.selection ? 'cursor-pointer' : 'cursor-default'}`}
+              >
+                <span className="flex min-w-0 items-center gap-2">
+                  <span className={`grid h-8 w-8 shrink-0 place-items-center rounded-full text-xs font-bold text-[#27304C] ${isCreator ? 'bg-[#FFE48B]' : 'bg-[#DCE8FF]'}`}>
+                    {p.name.slice(0, 1).toUpperCase()}
+                  </span>
+                  <span className="min-w-0 truncate font-bold text-[#27304C] text-sm flex items-center gap-1.5">
+                    {p.name}
+                    {isCreator && <Crown size={12} className="shrink-0 text-[#F26F52]" />}
+                  </span>
                 </span>
-                <span className="min-w-0 truncate font-bold text-[#27304C] text-sm flex items-center gap-1.5">
-                  {p.name}
-                  {isCreator && <Crown size={12} className="text-[#F26F52]" />}
+                <span className="flex shrink-0 items-center gap-1.5 text-[10px] font-mono uppercase tracking-wide text-[#6A6E80]">
+                  {p.preferencesSubmitted ? (
+                    <><CheckCircle2 size={13} className="text-[#37A28C]" /> <span className="text-[#37A28C]">Ready</span></>
+                  ) : (
+                    <><Clock size={13} /> Thinking</>
+                  )}
+                  {p.selection && <ChevronDown size={14} className={`transition-transform ${isExpanded ? 'rotate-180' : ''}`} />}
                 </span>
-              </div>
-              <div className="flex shrink-0 items-center gap-1.5 text-[10px] font-mono uppercase tracking-wide text-[#6A6E80]">
-                {p.preferencesSubmitted ? (
-                  <><CheckCircle2 size={13} className="text-[#37A28C]" /> <span className="text-[#37A28C]">Ready</span></>
-                ) : (
-                  <><Clock size={13} /> Thinking</>
-                )}
-              </div>
+              </button>
+              {isExpanded && p.selection && (
+                <div id={`selection-${p.id}`} className="mt-3 grid grid-cols-2 gap-2 border-t border-[#E8E3D2] pt-3 sm:grid-cols-4">
+                  <SelectionItem label="Activity" value={labelFor(activityOptions, p.selection.activity)} />
+                  <SelectionItem label="Budget" value={labelFor(budgetOptions, p.selection.budget)} />
+                  <SelectionItem label="Distance" value={labelFor(distanceOptions, p.selection.distance)} />
+                  <div className="col-span-2 sm:col-span-1">
+                    <span className="block font-mono text-[9px] font-bold uppercase tracking-wide text-[#8A8D9B]">Hard NOs</span>
+                    {p.selection.hardNos.length > 0 ? (
+                      <div className="mt-1 flex flex-wrap gap-1">
+                        {p.selection.hardNos.map((hardNo) => (
+                          <span key={hardNo} className="rounded-full bg-[#FFD9D3] px-2 py-0.5 text-[10px] font-semibold text-[#A83F31]">
+                            {labelFor(noOptions, hardNo)}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <span className="mt-1 block text-xs font-semibold text-[#6A6E80]">None</span>
+                    )}
+                  </div>
+                </div>
+              )}
+              {p.preferencesSubmitted && !p.selection && (
+                <p className="mt-2 text-[10px] font-semibold text-[#8A8D9B]">Selection details unavailable</p>
+              )}
             </div>
           );
         })}
@@ -39,6 +78,19 @@ export function Roster({ participants, capacity }: { participants: Participant[]
           </div>
         ))}
       </div>
+    </div>
+  );
+}
+
+function labelFor(options: readonly { label: string; value: string }[], value: string): string {
+  return options.find((option) => option.value === value)?.label ?? value;
+}
+
+function SelectionItem({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="min-w-0">
+      <span className="block font-mono text-[9px] font-bold uppercase tracking-wide text-[#8A8D9B]">{label}</span>
+      <span className="mt-1 block truncate text-xs font-semibold text-[#27304C]">{value}</span>
     </div>
   );
 }

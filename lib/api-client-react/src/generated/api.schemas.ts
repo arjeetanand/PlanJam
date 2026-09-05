@@ -113,11 +113,62 @@ export interface PhaseInput {
   phase: PhaseInputPhase;
 }
 
+export type ParticipantSelectionActivity = typeof ParticipantSelectionActivity[keyof typeof ParticipantSelectionActivity];
+
+
+export const ParticipantSelectionActivity = {
+  food: 'food',
+  movie: 'movie',
+  games: 'games',
+  outdoors: 'outdoors',
+  chill: 'chill',
+  party: 'party',
+} as const;
+
+export type ParticipantSelectionBudget = typeof ParticipantSelectionBudget[keyof typeof ParticipantSelectionBudget];
+
+
+export const ParticipantSelectionBudget = {
+  NUMBER_500: '500',
+  NUMBER_1000: '1000',
+  NUMBER_1500: '1500',
+  '2000-plus': '2000-plus',
+} as const;
+
+export type ParticipantSelectionDistance = typeof ParticipantSelectionDistance[keyof typeof ParticipantSelectionDistance];
+
+
+export const ParticipantSelectionDistance = {
+  nearby: 'nearby',
+  '5km': '5km',
+  '10km': '10km',
+  anywhere: 'anywhere',
+} as const;
+
+export type ParticipantSelectionHardNosItem = typeof ParticipantSelectionHardNosItem[keyof typeof ParticipantSelectionHardNosItem];
+
+
+export const ParticipantSelectionHardNosItem = {
+  crowds: 'crowds',
+  'long-drives': 'long-drives',
+  'loud-venues': 'loud-venues',
+  'spicy-food': 'spicy-food',
+  'late-nights': 'late-nights',
+} as const;
+
+export interface ParticipantSelection {
+  activity: ParticipantSelectionActivity;
+  budget: ParticipantSelectionBudget;
+  distance: ParticipantSelectionDistance;
+  hardNos: ParticipantSelectionHardNosItem[];
+}
+
 export interface Participant {
   id: string;
   name: string;
   preferencesSubmitted: boolean;
   votesSubmitted: boolean;
+  selection: ParticipantSelection | null;
 }
 
 export interface Venue {
