@@ -5,12 +5,28 @@ import { activityOptions, budgetOptions, distanceOptions, noOptions } from '@/li
 
 export function Roster({ participants, capacity }: { participants: Participant[]; capacity: number }) {
   const [expandedParticipantId, setExpandedParticipantId] = useState<string | null>(null);
+  const readyCount = participants.filter((participant) => participant.preferencesSubmitted).length;
+  const waitingCount = participants.length - readyCount;
 
   return (
     <div className="rounded-3xl border border-[#D9D7D0] bg-[#FFF7E8]/80 p-5">
       <div className="mb-4 flex items-center justify-between gap-3">
         <h3 className="font-mono text-[10px] font-bold uppercase tracking-[.14em] text-[#8A8D9B]">The Crew</h3>
         <span className="font-mono text-[10px] font-bold uppercase tracking-[.12em] text-[#6A6E80]">{participants.length}/{capacity}</span>
+      </div>
+      <div
+        aria-live="polite"
+        data-testid="roster-readiness-summary"
+        className="mb-3 flex flex-wrap items-center gap-x-2 gap-y-1 rounded-xl border border-[#D9D7D0] bg-[#FFFDF5] px-3 py-2 text-xs font-bold text-[#27304C]"
+      >
+        <span className="flex items-center gap-1.5 text-[#37A28C]">
+          <CheckCircle2 size={14} />
+          {readyCount}/{participants.length} ready
+        </span>
+        <span aria-hidden="true" className="text-[#B0AFB5]">·</span>
+        <span className={waitingCount > 0 ? 'text-[#A83F31]' : 'text-[#37A28C]'}>
+          {waitingCount > 0 ? `${waitingCount} waiting` : 'Everyone ready'}
+        </span>
       </div>
       <div className="grid gap-2 sm:grid-cols-2">
         {participants.map((p, index) => {
