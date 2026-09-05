@@ -3,7 +3,15 @@ import type { Participant } from '@workspace/api-client-react';
 import { CheckCircle2, ChevronDown, Clock, Crown } from 'lucide-react';
 import { activityOptions, budgetOptions, distanceOptions, noOptions } from '@/lib/constants';
 
-export function Roster({ participants, capacity }: { participants: Participant[]; capacity: number }) {
+export function Roster({
+  participants,
+  capacity,
+  showEmptySlots = true,
+}: {
+  participants: Participant[];
+  capacity: number;
+  showEmptySlots?: boolean;
+}) {
   const [expandedParticipantId, setExpandedParticipantId] = useState<string | null>(null);
   const readyCount = participants.filter((participant) => participant.preferencesSubmitted).length;
   const waitingCount = participants.length - readyCount;
@@ -87,7 +95,7 @@ export function Roster({ participants, capacity }: { participants: Participant[]
             </div>
           );
         })}
-        {participants.length < capacity && Array.from({ length: capacity - participants.length }).map((_, i) => (
+        {showEmptySlots && participants.length < capacity && Array.from({ length: capacity - participants.length }).map((_, i) => (
           <div key={`empty-${i}`} className="flex items-center gap-3 rounded-xl border border-[#D9D7D0] border-dashed p-3 opacity-50">
             <span className="grid h-8 w-8 place-items-center rounded-full bg-[#E8E3D2] text-[#8A8D9B]">?</span>
             <span className="text-sm font-semibold text-[#8A8D9B]">Waiting...</span>

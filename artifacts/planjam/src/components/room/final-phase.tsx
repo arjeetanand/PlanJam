@@ -3,6 +3,7 @@ import { SectionTitle } from '@/components/ui/section-title';
 import { type RoomState } from '@workspace/api-client-react';
 import { Crown, Heart, Check, Ban, Utensils, Film, Gamepad2, Sun, Waves, PartyPopper, MapPin, Navigation, Star, Clock3, type LucideIcon } from 'lucide-react';
 import { RoomShare } from './room-share';
+import { Roster } from './roster';
 
 const PLAN_ICONS: Record<string, LucideIcon> = {
   food: Utensils,
@@ -47,6 +48,7 @@ export function FinalPhase({ room }: { room: RoomState }) {
         </div>
 
         {winnerPlan ? (
+          <>
            <div className="rise-in mx-auto max-w-lg overflow-hidden rounded-[28px] border-2 border-[#27304C] bg-[#FFFDF5] shadow-[8px_8px_0_#F26F52] sm:rounded-[32px] sm:shadow-[12px_12px_0_#F26F52]">
             <div className={`p-8 text-center ${PLAN_COLORS[winnerPlan.category] || 'bg-[#FFE48B]'} border-b-2 border-[#27304C]`}>
               <div className="mx-auto mb-4 grid h-20 w-20 place-items-center rounded-2xl bg-[#27304C] text-[#FFF7E8] shadow-[4px_4px_0_#FFF7E8]">
@@ -104,6 +106,17 @@ export function FinalPhase({ room }: { room: RoomState }) {
               </div>
             </div>
           </div>
+          <section className="mx-auto mt-8 max-w-lg" data-testid="final-starting-point">
+            <div className="mb-3">
+              <p className="font-mono text-[10px] font-bold uppercase tracking-[.14em] text-[#F26F52]">where we started</p>
+              <h3 className="mt-1 font-display text-2xl font-bold tracking-[-.05em] text-[#27304C]">The group’s shared starting point</h3>
+              <p className="mt-2 text-sm leading-6 text-[#6A6E80]">
+                A private recap of the preferences that shaped the shortlist. Open a name to revisit their starting point.
+              </p>
+            </div>
+            <Roster participants={room.participants} capacity={room.capacity} showEmptySlots={false} />
+          </section>
+          </>
         ) : (
           <div className="p-10 text-center text-[#6A6E80]" role="status" data-testid="status-winner-not-found">Winner not found</div>
         )}
