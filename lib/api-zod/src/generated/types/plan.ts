@@ -5,6 +5,7 @@
  * PlanJam anonymous shared-room API
  * OpenAPI spec version: 0.1.0
  */
+import type { Venue } from './venue';
 
 export interface Plan {
   id: string;
@@ -15,4 +16,5 @@ export interface Plan {
   distance?: string;
   matchPercent: number;
   reasons: string[];
+  venue?: Venue;
 }

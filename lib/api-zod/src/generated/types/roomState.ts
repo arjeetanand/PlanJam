@@ -8,6 +8,7 @@
 import type { Participant } from './participant';
 import type { Plan } from './plan';
 import type { RoomStatePhase } from './roomStatePhase';
+import type { RoomStateVenueStatus } from './roomStateVenueStatus';
 import type { RoomStateViewerPreferences } from './roomStateViewerPreferences';
 import type { RoomStateViewerVotes } from './roomStateViewerVotes';
 import type { VoteTotal } from './voteTotal';
@@ -28,4 +29,5 @@ export interface RoomState {
   /** @nullable */
   viewerPreferences: RoomStateViewerPreferences;
   viewerVotes: RoomStateViewerVotes;
+  venueStatus: RoomStateVenueStatus;
 }

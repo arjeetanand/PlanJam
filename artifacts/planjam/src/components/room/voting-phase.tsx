@@ -11,7 +11,7 @@ import {
 import { getAuthHeaders } from '@/lib/storage';
 import { queryClient } from '@/lib/query-client';
 import { mergeRoomState } from '@/lib/room-cache';
-import { ArrowRight, ThumbsUp, Check, ThumbsDown, Utensils, Film, Gamepad2, Sun, Waves, PartyPopper, type LucideIcon } from 'lucide-react';
+import { ArrowRight, ThumbsUp, Check, ThumbsDown, Utensils, Film, Gamepad2, Sun, Waves, PartyPopper, MapPin, ExternalLink, type LucideIcon } from 'lucide-react';
 import { Roster } from './roster';
 
 const PLAN_ICONS: Record<string, LucideIcon> = {
@@ -108,6 +108,12 @@ export function VotingPhase({ room }: { room: RoomState }) {
                       <p className="mt-1 text-sm text-[#6A6E80]">{plan.detail}</p>
                     </div>
                   </div>
+                     {plan.venue && (
+                       <div className="mb-4 flex items-start justify-between gap-3 rounded-xl bg-[#F0EDE1] p-3 text-xs text-[#5E6377]">
+                         <span className="flex items-start gap-1.5"><MapPin size={14} className="mt-0.5 shrink-0 text-[#F26F52]" /> {plan.venue.address} · {plan.venue.distanceMeters < 1000 ? `${plan.venue.distanceMeters} m` : `${(plan.venue.distanceMeters / 1000).toFixed(1)} km`}</span>
+                         <a href={plan.venue.mapsUrl} target="_blank" rel="noopener noreferrer" className="inline-flex shrink-0 items-center gap-1 font-bold text-[#277865]">Maps <ExternalLink size={12} /></a>
+                       </div>
+                     )}
                   <div className="grid grid-cols-3 gap-2">
                     {voteLabels.map(({ value, label, icon: VoteIcon }) => {
                       const selected = myVote === value;

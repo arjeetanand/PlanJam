@@ -9,12 +9,31 @@ export interface HealthStatus {
   status: string;
 }
 
+export interface RoomLocationInput {
+  /**
+     * @minimum -90
+     * @maximum 90
+     */
+  latitude: number;
+  /**
+     * @minimum -180
+     * @maximum 180
+     */
+  longitude: number;
+  /**
+     * @minimum 0
+     * @maximum 10000
+     */
+  accuracy: number;
+}
+
 export interface RoomInput {
   /**
      * @minLength 1
      * @maxLength 40
      */
   name: string;
+  location?: RoomLocationInput;
 }
 
 export interface ParticipantInput {
@@ -101,6 +120,16 @@ export interface Participant {
   votesSubmitted: boolean;
 }
 
+export interface Venue {
+  category: string;
+  address: string;
+  distanceMeters: number;
+  rating?: number;
+  openNow?: boolean;
+  /** @pattern ^https://www\.google\.com/maps/ */
+  mapsUrl: string;
+}
+
 export interface Plan {
   id: string;
   name: string;
@@ -110,6 +139,7 @@ export interface Plan {
   distance?: string;
   matchPercent: number;
   reasons: string[];
+  venue?: Venue;
 }
 
 export interface VoteTotal {
@@ -185,6 +215,17 @@ export type RoomStateViewerPreferences = {
 
 export type RoomStateViewerVotes = {[key: string]: 'love' | 'works' | 'no'};
 
+export type RoomStateVenueStatus = typeof RoomStateVenueStatus[keyof typeof RoomStateVenueStatus];
+
+
+export const RoomStateVenueStatus = {
+  'nearby-ready': 'nearby-ready',
+  'nearby-results': 'nearby-results',
+  'fallback-no-location': 'fallback-no-location',
+  'fallback-provider-unavailable': 'fallback-provider-unavailable',
+  'fallback-no-results': 'fallback-no-results',
+} as const;
+
 export interface RoomState {
   slug: string;
   phase: RoomStatePhase;
@@ -201,6 +242,7 @@ export interface RoomState {
   /** @nullable */
   viewerPreferences: RoomStateViewerPreferences;
   viewerVotes: RoomStateViewerVotes;
+  venueStatus: RoomStateVenueStatus;
 }
 
 export type RoomCreation = RoomState & {

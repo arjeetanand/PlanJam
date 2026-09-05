@@ -45,7 +45,7 @@ router.post("/rooms", async (req, res): Promise<void> => {
   if (!body.success) { res.status(400).json({ error: body.error.message }); return; }
   if (limited(req, res, `create:${req.ip}`)) return;
   try {
-    const state = await createRoom(body.data.name);
+    const state = await createRoom(body.data.name, body.data.location);
     req.log.info("Room created");
     res.status(201).json(CreateRoomResponse.parse(state));
   } catch (error) { sendError(res, error); }

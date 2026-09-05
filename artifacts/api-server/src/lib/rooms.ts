@@ -1,6 +1,7 @@
 import { createHash, randomBytes } from "node:crypto";
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { db, participantsTable, preferencesTable, roomsTable, votesTable } from "@workspace/db";
+import { searchNearbyVenues, type VenuePlan } from "./places";
 
 type Activity = "food" | "movie" | "games" | "outdoors" | "chill" | "party";
 type HardNo = "crowds" | "long-drives" | "loud-venues" | "spicy-food" | "late-nights";
@@ -76,12 +77,19 @@ function recommendations(prefs: PreferenceInput[]) {
     .slice(0, 3);
 }
 
+function fallbackPlans(prefs: PreferenceInput[], excludedIds: string[] = []) {
+  return recommendations(prefs).filter((plan) => !excludedIds.includes(plan.id));
+}
+
 export async function roomState(room: typeof roomsTable.$inferSelect, participantToken?: string, hostToken?: string) {
   const participants = await db.select().from(participantsTable).where(eq(participantsTable.roomId, room.id));
   const preferences = participants.length ? await db.select().from(preferencesTable).where(inArray(preferencesTable.participantId, participants.map((p) => p.id))) : [];
   const votes = participants.length ? await db.select().from(votesTable).where(inArray(votesTable.participantId, participants.map((p) => p.id))) : [];
   const scoredPlans = recommendations(preferences as PreferenceInput[]);
+  const storedVenuePlans = (room.venueShortlist ?? []) as VenuePlan[];
   const shortlist = room.shortlist.map((id) => {
+    const venuePlan = storedVenuePlans.find((plan) => plan.id === id);
+    if (venuePlan) return venuePlan;
     const scored = scoredPlans.find((plan) => plan.id === id);
     if (scored) return scored;
     const plan = catalog.find((candidate) => candidate.id === id);
@@ -105,16 +113,34 @@ export async function roomState(room: typeof roomsTable.$inferSelect, participan
     shortlist, voteTotals, winner, viewerParticipantId: viewer?.id ?? null, isHost: isHost || null,
     viewerPreferences: viewer ? preferences.find((pref) => pref.participantId === viewer.id) ?? null : null,
     viewerVotes: viewer ? Object.fromEntries(votes.filter((vote) => vote.participantId === viewer.id).map((vote) => [vote.planId, vote.vote])) : {},
+    venueStatus: room.venueStatus,
   };
 }
 
-export async function createRoom(name: string, clerkUserId?: string) {
+export async function createRoom(
+  name: string,
+  location?: { latitude: number; longitude: number; accuracy: number },
+  clerkUserId?: string,
+) {
   name = normalizeDisplayName(name);
+  const reducedLocation = location ? {
+    locationLat: Number(location.latitude.toFixed(3)),
+    locationLng: Number(location.longitude.toFixed(3)),
+    locationAccuracy: Math.ceil(location.accuracy),
+    venueStatus: "nearby-ready",
+  } : {
+    venueStatus: "fallback-no-location",
+  };
   const hostToken = makeToken(); const participantToken = makeToken();
   let room;
   for (let attempt = 0; attempt < 3; attempt++) {
     try {
-      [room] = await db.insert(roomsTable).values({ slug: makeSlug(), hostTokenHash: hashToken(hostToken), expiresAt: new Date(Date.now() + 86400000) }).returning();
+      [room] = await db.insert(roomsTable).values({
+        slug: makeSlug(),
+        hostTokenHash: hashToken(hostToken),
+        expiresAt: new Date(Date.now() + 86400000),
+        ...reducedLocation,
+      }).returning();
       break;
     } catch { if (attempt === 2) throw new RoomError(409, "Could not allocate room"); }
   }
@@ -199,9 +225,23 @@ export async function advancePhase(room: typeof roomsTable.$inferSelect, hostTok
       if (participants.length < 2) throw new RoomError(409, "At least two participants are required");
       const prefs = await tx.select().from(preferencesTable).where(inArray(preferencesTable.participantId, participants.map((p) => p.id)));
       if (prefs.length !== participants.length) throw new RoomError(409, "Everyone must submit preferences");
-      const shortlist = recommendations(prefs as PreferenceInput[]);
+      const preferenceInputs = prefs as PreferenceInput[];
+      let venuePlans: VenuePlan[] = [];
+      let venueStatus = lockedRoom.venueStatus;
+      if (lockedRoom.locationLat !== null && lockedRoom.locationLng !== null) {
+        const nearby = await searchNearbyVenues(lockedRoom.locationLat, lockedRoom.locationLng, preferenceInputs);
+        venuePlans = nearby.plans;
+        venueStatus = nearby.status;
+      }
+      const curated = fallbackPlans(preferenceInputs, venuePlans.map((plan) => plan.id));
+      const shortlist = [...venuePlans, ...curated].slice(0, 3);
       if (shortlist.length < 3) throw new RoomError(409, "Fewer than three plans satisfy every hard no");
-      const [next] = await tx.update(roomsTable).set({ phase: "shortlist", shortlist: shortlist.map((plan) => plan.id) }).where(eq(roomsTable.id, lockedRoom.id)).returning();
+      const [next] = await tx.update(roomsTable).set({
+        phase: "shortlist",
+        shortlist: shortlist.map((plan) => plan.id),
+        venueShortlist: venuePlans,
+        venueStatus,
+      }).where(eq(roomsTable.id, lockedRoom.id)).returning();
       return next;
     }
     if (phase === "voting") {

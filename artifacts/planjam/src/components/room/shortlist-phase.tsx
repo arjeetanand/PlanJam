@@ -9,7 +9,7 @@ import {
 import { getAuthHeaders } from '@/lib/storage';
 import { queryClient } from '@/lib/query-client';
 import { mergeRoomState } from '@/lib/room-cache';
-import { ArrowRight, Crown, Sparkles, Utensils, Film, Gamepad2, Sun, Waves, PartyPopper, type LucideIcon } from 'lucide-react';
+import { ArrowRight, Crown, Sparkles, Utensils, Film, Gamepad2, Sun, Waves, PartyPopper, MapPin, Star, Clock3, ExternalLink, type LucideIcon } from 'lucide-react';
 import { Roster } from './roster';
 
 const PLAN_ICONS: Record<string, LucideIcon> = {
@@ -100,6 +100,15 @@ export function ShortlistPhase({ room }: { room: RoomState }) {
               </div>
               <span className="hidden text-xs text-[#8A8D9B] sm:block">ranked by group match</span>
             </div>
+            <div className="mb-4 rounded-xl border border-[#D9D7D0] bg-[#FFFDF5] px-4 py-3 text-xs text-[#6A6E80]">
+              {room.venueStatus === 'nearby-results'
+                ? 'Real nearby venues are mixed with curated backups when needed.'
+                : room.venueStatus === 'fallback-provider-unavailable'
+                  ? 'Nearby search is temporarily unavailable, so these are curated group matches.'
+                  : room.venueStatus === 'fallback-no-results'
+                    ? 'No suitable nearby venues were found, so these are curated group matches.'
+                    : 'No room location was shared, so these are curated group matches.'}
+            </div>
             <div className="space-y-4">
               {room.shortlist.map((plan, index) => {
                 const Icon = PLAN_ICONS[plan.category] || Utensils;
@@ -132,6 +141,17 @@ export function ShortlistPhase({ room }: { room: RoomState }) {
                             <span key={reason} className="rounded-full bg-[#F0EDE1] px-2.5 py-1 text-[11px] font-semibold text-[#65697A]">{reason}</span>
                           ))}
                         </div>
+                         {plan.venue && (
+                           <div className="mt-4 rounded-xl bg-[#F0EDE1] p-3 text-xs text-[#5E6377]">
+                             <p className="flex items-start gap-1.5"><MapPin size={14} className="mt-0.5 shrink-0 text-[#F26F52]" /> {plan.venue.address}</p>
+                             <div className="mt-2 flex flex-wrap items-center gap-3">
+                               <span>{plan.venue.distanceMeters < 1000 ? `${plan.venue.distanceMeters} m` : `${(plan.venue.distanceMeters / 1000).toFixed(1)} km`} away</span>
+                               {plan.venue.rating !== undefined && <span className="flex items-center gap-1"><Star size={13} fill="#F4B942" className="text-[#F4B942]" /> {plan.venue.rating.toFixed(1)}</span>}
+                               {plan.venue.openNow !== undefined && <span className="flex items-center gap-1"><Clock3 size={13} /> {plan.venue.openNow ? 'Open now' : 'Closed now'}</span>}
+                               <a href={plan.venue.mapsUrl} target="_blank" rel="noopener noreferrer" className="ml-auto inline-flex items-center gap-1 font-bold text-[#277865] hover:underline">Maps <ExternalLink size={12} /></a>
+                             </div>
+                           </div>
+                         )}
                       </div>
                     </div>
                     {index === 0 && (

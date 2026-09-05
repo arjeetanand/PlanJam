@@ -1,6 +1,6 @@
 import { Shell } from '@/components/layout/shell';
 import { Button } from '@/components/ui/app-button';
-import { ArrowRight, Clock3, Crown, Sparkles, CheckCircle2, Heart, Flame, Users, Utensils } from 'lucide-react';
+import { ArrowRight, Clock3, Crown, Sparkles, CheckCircle2, Heart, Flame, Users, Utensils, LocateFixed, MapPin, ShieldCheck } from 'lucide-react';
 import { useCreateRoom } from '@workspace/api-client-react';
 import { saveTokens } from '@/lib/storage';
 import { useLocation } from 'wouter';
@@ -11,17 +11,43 @@ export function HomePage() {
   const [, setLocation] = useLocation();
   const createRoom = useCreateRoom();
   const [name, setName] = useState('');
+  const [locationState, setLocationState] = useState<'idle' | 'requesting' | 'ready' | 'unavailable' | 'skipped'>('idle');
+  const [roomLocation, setRoomLocation] = useState<{ latitude: number; longitude: number; accuracy: number }>();
   const { isSignedIn, user } = useAppAuth();
 
   const handleStart = (e: React.FormEvent) => {
     e.preventDefault();
     const finalName = name.trim() || (isSignedIn && user?.firstName ? user.firstName : 'Host');
-    createRoom.mutate({ data: { name: finalName } }, {
+    createRoom.mutate({ data: { name: finalName, ...(roomLocation ? { location: roomLocation } : {}) } }, {
       onSuccess: (data) => {
         saveTokens(data.slug, data.participantToken, data.hostToken);
         setLocation(`/room/${data.slug}`);
       }
     });
+  };
+
+  const requestLocation = () => {
+    if (!navigator.geolocation) {
+      setLocationState('unavailable');
+      return;
+    }
+    setLocationState('requesting');
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => {
+        if (coords.accuracy > 10000) {
+          setRoomLocation(undefined);
+          setLocationState('unavailable');
+          return;
+        }
+        setRoomLocation({ latitude: coords.latitude, longitude: coords.longitude, accuracy: coords.accuracy });
+        setLocationState('ready');
+      },
+      () => {
+        setRoomLocation(undefined);
+        setLocationState('unavailable');
+      },
+      { enableHighAccuracy: false, timeout: 8000, maximumAge: 300000 },
+    );
   };
 
   return (
@@ -44,7 +70,7 @@ export function HomePage() {
             PlanJam turns scattered “I’m easy”s into a real decision. Everyone picks, the overlap appears, and the crew votes one good plan into existence.
           </p>
           
-          <form onSubmit={handleStart} className="mt-9 flex flex-col gap-4 sm:flex-row sm:items-center flex-wrap">
+          <form onSubmit={handleStart} className="mt-9 flex flex-col gap-4">
             <div className="flex items-center gap-2">
               <input 
                 type="text" 
@@ -58,6 +84,24 @@ export function HomePage() {
               <Button type="submit" disabled={createRoom.isPending} testId="button-start-planning" className="px-7 py-3.5 text-base whitespace-nowrap">
                 {createRoom.isPending ? 'Starting...' : 'Start a room'} <ArrowRight size={18} strokeWidth={2.5} />
               </Button>
+            </div>
+            <div className="max-w-md rounded-2xl border border-[#D9D7D0] bg-[#FFFDF5]/80 p-4">
+              <div className="flex items-start gap-3">
+                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#B7DBD7] text-[#27304C]"><MapPin size={18} /></span>
+                <div className="min-w-0">
+                  <strong className="block text-sm text-[#27304C]">Find real places nearby?</strong>
+                  <p className="mt-1 text-xs leading-5 text-[#717589]">Optional. Your location anchors suggestions for the room, is reduced before storage, and is never shown to guests.</p>
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <button type="button" onClick={requestLocation} disabled={locationState === 'requesting'} className="inline-flex items-center gap-1.5 rounded-full border border-[#27304C] bg-[#27304C] px-3 py-2 text-xs font-bold text-[#FFF7E8] disabled:opacity-60" data-testid="button-use-location">
+                      <LocateFixed size={14} /> {locationState === 'requesting' ? 'Locating…' : locationState === 'ready' ? 'Location ready' : 'Use my location'}
+                    </button>
+                    <button type="button" onClick={() => { setRoomLocation(undefined); setLocationState('skipped'); }} className="px-2 py-2 text-xs font-bold text-[#6A6E80]" data-testid="button-skip-location">Skip</button>
+                  </div>
+                  {locationState === 'ready' && <p className="mt-2 flex items-center gap-1 text-xs font-semibold text-[#277865]"><ShieldCheck size={13} /> Ready for nearby suggestions</p>}
+                  {locationState === 'unavailable' && <p className="mt-2 text-xs text-[#A83F31]">Location wasn’t available. You can still start with curated ideas.</p>}
+                  {locationState === 'skipped' && <p className="mt-2 text-xs text-[#717589]">No problem — curated suggestions will be used.</p>}
+                </div>
+              </div>
             </div>
             <span className="inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[.12em] text-[#8A8D9B]"><Clock3 size={13} /> takes 60 seconds</span>
           </form>

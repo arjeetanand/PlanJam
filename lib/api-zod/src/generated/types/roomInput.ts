@@ -5,6 +5,7 @@
  * PlanJam anonymous shared-room API
  * OpenAPI spec version: 0.1.0
  */
+import type { RoomLocationInput } from './roomLocationInput';
 
 export interface RoomInput {
   /**
@@ -12,4 +13,5 @@ export interface RoomInput {
      * @maxLength 40
      */
   name: string;
+  location?: RoomLocationInput;
 }

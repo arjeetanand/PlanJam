@@ -121,7 +121,17 @@ components:
     RoomInput:
       type: object
       required: [name]
-      properties: { name: { type: string, minLength: 1, maxLength: 40 } }
+      properties:
+        name: { type: string, minLength: 1, maxLength: 40 }
+        location:
+          $ref: "#/components/schemas/RoomLocationInput"
+    RoomLocationInput:
+      type: object
+      required: [latitude, longitude, accuracy]
+      properties:
+        latitude: { type: number, minimum: -90, maximum: 90 }
+        longitude: { type: number, minimum: -180, maximum: 180 }
+        accuracy: { type: number, minimum: 0, maximum: 10000 }
     ParticipantInput:
       type: object
       required: [name]
@@ -159,13 +169,25 @@ components:
         distance: { type: string }
         matchPercent: { type: number }
         reasons: { type: array, items: { type: string } }
+        venue:
+          $ref: "#/components/schemas/Venue"
+    Venue:
+      type: object
+      required: [category, address, distanceMeters, mapsUrl]
+      properties:
+        category: { type: string }
+        address: { type: string }
+        distanceMeters: { type: number }
+        rating: { type: number }
+        openNow: { type: boolean }
+        mapsUrl: { type: string, pattern: "^https://www\\.google\\.com/maps/" }
     VoteTotal:
       type: object
       required: [planId, love, works, no, score]
       properties: { planId: { type: string }, love: { type: number }, works: { type: number }, no: { type: number }, score: { type: number } }
     RoomState:
       type: object
-      required: [slug, phase, expiresAt, participants, shortlist, voteTotals, winner, viewerPreferences, viewerVotes]
+      required: [slug, phase, expiresAt, participants, shortlist, voteTotals, winner, viewerPreferences, viewerVotes, venueStatus]
       properties:
         slug: { type: string }
         phase: { type: string, enum: [preferences, shortlist, voting, final] }
@@ -178,6 +200,7 @@ components:
         isHost: { type: ["boolean", "null"] }
         viewerPreferences: { type: ["object", "null"], properties: { activity: { type: string, enum: [food, movie, games, outdoors, chill, party] }, budget: { type: string, enum: ["500", "1000", "1500", "2000-plus"] }, distance: { type: string, enum: [nearby, "5km", "10km", anywhere] }, hardNos: { type: array, items: { type: string, enum: [crowds, long-drives, loud-venues, spicy-food, late-nights] } } }, required: [activity, budget, distance, hardNos] }
         viewerVotes: { type: object, additionalProperties: { type: string, enum: [love, works, no] } }
+        venueStatus: { type: string, enum: [nearby-ready, nearby-results, fallback-no-location, fallback-provider-unavailable, fallback-no-results] }
     RoomCreation:
       allOf:
         - $ref: "#/components/schemas/RoomState"

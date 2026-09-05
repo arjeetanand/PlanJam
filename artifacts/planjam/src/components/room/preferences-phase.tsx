@@ -15,7 +15,7 @@ import {
 import { getAuthHeaders } from '@/lib/storage';
 import { queryClient } from '@/lib/query-client';
 import { mergeRoomState } from '@/lib/room-cache';
-import { Check, WalletCards, Compass, Ban, CheckCircle2, ArrowRight } from 'lucide-react';
+import { Check, WalletCards, Compass, Ban, CheckCircle2, ArrowRight, MapPin } from 'lucide-react';
 
 export function PreferencesPhase({ room }: { room: RoomState }) {
   const headers = getAuthHeaders(room.slug);
@@ -131,6 +131,14 @@ export function PreferencesPhase({ room }: { room: RoomState }) {
         </div>
 
         <aside className="space-y-6">
+          <div className="rounded-2xl border border-[#D9D7D0] bg-[#FFFDF5] p-4">
+            <p className="flex items-center gap-2 text-sm font-bold text-[#27304C]"><MapPin size={16} className="text-[#F26F52]" /> Suggestion source</p>
+            <p className="mt-1 text-xs leading-5 text-[#717589]">
+              {room.venueStatus === 'nearby-ready'
+                ? 'Nearby search is ready. The host’s private room location will be used when the shortlist is made.'
+                : 'This room will use PlanJam’s curated suggestions. No location is shared.'}
+            </p>
+          </div>
           <RoomShare slug={room.slug} />
           <Roster participants={room.participants} isHost={isHost} />
           

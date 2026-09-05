@@ -18,11 +18,28 @@ export const HealthCheckResponse = zod.object({
 
 export const createRoomBodyNameMax = 40;
 
+export const createRoomBodyLocationLatitudeMin = -90;
+export const createRoomBodyLocationLatitudeMax = 90;
+
+export const createRoomBodyLocationLongitudeMin = -180;
+export const createRoomBodyLocationLongitudeMax = 180;
+
+export const createRoomBodyLocationAccuracyMin = 0;
+export const createRoomBodyLocationAccuracyMax = 10000;
+
 
 
 export const CreateRoomBody = zod.object({
-  "name": zod.string().min(1).max(createRoomBodyNameMax)
+  "name": zod.string().min(1).max(createRoomBodyNameMax),
+  "location": zod.object({
+  "latitude": zod.number().min(createRoomBodyLocationLatitudeMin).max(createRoomBodyLocationLatitudeMax),
+  "longitude": zod.number().min(createRoomBodyLocationLongitudeMin).max(createRoomBodyLocationLongitudeMax),
+  "accuracy": zod.number().min(createRoomBodyLocationAccuracyMin).max(createRoomBodyLocationAccuracyMax)
+}).optional()
 })
+
+export const createRoomResponseOneShortlistItemVenueMapsUrlRegExp = new RegExp('^https://www\\.google\\.com/maps');
+
 
 export const CreateRoomResponse = zod.object({
   "slug": zod.string(),
@@ -42,7 +59,15 @@ export const CreateRoomResponse = zod.object({
   "budget": zod.string().optional(),
   "distance": zod.string().optional(),
   "matchPercent": zod.number(),
-  "reasons": zod.array(zod.string())
+  "reasons": zod.array(zod.string()),
+  "venue": zod.object({
+  "category": zod.string(),
+  "address": zod.string(),
+  "distanceMeters": zod.number(),
+  "rating": zod.number().optional(),
+  "openNow": zod.boolean().optional(),
+  "mapsUrl": zod.string().regex(createRoomResponseOneShortlistItemVenueMapsUrlRegExp)
+}).optional()
 })),
   "voteTotals": zod.array(zod.object({
   "planId": zod.string(),
@@ -60,7 +85,8 @@ export const CreateRoomResponse = zod.object({
   "distance": zod.enum(['nearby', '5km', '10km', 'anywhere']),
   "hardNos": zod.array(zod.enum(['crowds', 'long-drives', 'loud-venues', 'spicy-food', 'late-nights']))
 }).nullable(),
-  "viewerVotes": zod.record(zod.string(), zod.enum(['love', 'works', 'no']))
+  "viewerVotes": zod.record(zod.string(), zod.enum(['love', 'works', 'no'])),
+  "venueStatus": zod.enum(['nearby-ready', 'nearby-results', 'fallback-no-location', 'fallback-provider-unavailable', 'fallback-no-results'])
 }).and(zod.object({
   "hostToken": zod.string(),
   "participantToken": zod.string()
@@ -82,6 +108,9 @@ export const JoinRoomBody = zod.object({
   "name": zod.string().min(1).max(joinRoomBodyNameMax)
 })
 
+export const joinRoomResponseOneShortlistItemVenueMapsUrlRegExp = new RegExp('^https://www\\.google\\.com/maps');
+
+
 export const JoinRoomResponse = zod.object({
   "slug": zod.string(),
   "phase": zod.enum(['preferences', 'shortlist', 'voting', 'final']),
@@ -100,7 +129,15 @@ export const JoinRoomResponse = zod.object({
   "budget": zod.string().optional(),
   "distance": zod.string().optional(),
   "matchPercent": zod.number(),
-  "reasons": zod.array(zod.string())
+  "reasons": zod.array(zod.string()),
+  "venue": zod.object({
+  "category": zod.string(),
+  "address": zod.string(),
+  "distanceMeters": zod.number(),
+  "rating": zod.number().optional(),
+  "openNow": zod.boolean().optional(),
+  "mapsUrl": zod.string().regex(joinRoomResponseOneShortlistItemVenueMapsUrlRegExp)
+}).optional()
 })),
   "voteTotals": zod.array(zod.object({
   "planId": zod.string(),
@@ -118,7 +155,8 @@ export const JoinRoomResponse = zod.object({
   "distance": zod.enum(['nearby', '5km', '10km', 'anywhere']),
   "hardNos": zod.array(zod.enum(['crowds', 'long-drives', 'loud-venues', 'spicy-food', 'late-nights']))
 }).nullable(),
-  "viewerVotes": zod.record(zod.string(), zod.enum(['love', 'works', 'no']))
+  "viewerVotes": zod.record(zod.string(), zod.enum(['love', 'works', 'no'])),
+  "venueStatus": zod.enum(['nearby-ready', 'nearby-results', 'fallback-no-location', 'fallback-provider-unavailable', 'fallback-no-results'])
 }).and(zod.object({
   "participantToken": zod.string()
 }))
@@ -130,6 +168,9 @@ export const getRoomStatePathSlugRegExp = new RegExp('^[A-Za-z0-9]{8}$');
 export const GetRoomStateParams = zod.object({
   "slug": zod.coerce.string().regex(getRoomStatePathSlugRegExp)
 })
+
+export const getRoomStateResponseShortlistItemVenueMapsUrlRegExp = new RegExp('^https://www\\.google\\.com/maps');
+
 
 export const GetRoomStateResponse = zod.object({
   "slug": zod.string(),
@@ -149,7 +190,15 @@ export const GetRoomStateResponse = zod.object({
   "budget": zod.string().optional(),
   "distance": zod.string().optional(),
   "matchPercent": zod.number(),
-  "reasons": zod.array(zod.string())
+  "reasons": zod.array(zod.string()),
+  "venue": zod.object({
+  "category": zod.string(),
+  "address": zod.string(),
+  "distanceMeters": zod.number(),
+  "rating": zod.number().optional(),
+  "openNow": zod.boolean().optional(),
+  "mapsUrl": zod.string().regex(getRoomStateResponseShortlistItemVenueMapsUrlRegExp)
+}).optional()
 })),
   "voteTotals": zod.array(zod.object({
   "planId": zod.string(),
@@ -167,7 +216,8 @@ export const GetRoomStateResponse = zod.object({
   "distance": zod.enum(['nearby', '5km', '10km', 'anywhere']),
   "hardNos": zod.array(zod.enum(['crowds', 'long-drives', 'loud-venues', 'spicy-food', 'late-nights']))
 }).nullable(),
-  "viewerVotes": zod.record(zod.string(), zod.enum(['love', 'works', 'no']))
+  "viewerVotes": zod.record(zod.string(), zod.enum(['love', 'works', 'no'])),
+  "venueStatus": zod.enum(['nearby-ready', 'nearby-results', 'fallback-no-location', 'fallback-provider-unavailable', 'fallback-no-results'])
 })
 
 
@@ -184,6 +234,9 @@ export const UpdateRoomPreferencesBody = zod.object({
   "distance": zod.enum(['nearby', '5km', '10km', 'anywhere']),
   "hardNos": zod.array(zod.enum(['crowds', 'long-drives', 'loud-venues', 'spicy-food', 'late-nights']))
 })
+
+export const updateRoomPreferencesResponseShortlistItemVenueMapsUrlRegExp = new RegExp('^https://www\\.google\\.com/maps');
+
 
 export const UpdateRoomPreferencesResponse = zod.object({
   "slug": zod.string(),
@@ -203,7 +256,15 @@ export const UpdateRoomPreferencesResponse = zod.object({
   "budget": zod.string().optional(),
   "distance": zod.string().optional(),
   "matchPercent": zod.number(),
-  "reasons": zod.array(zod.string())
+  "reasons": zod.array(zod.string()),
+  "venue": zod.object({
+  "category": zod.string(),
+  "address": zod.string(),
+  "distanceMeters": zod.number(),
+  "rating": zod.number().optional(),
+  "openNow": zod.boolean().optional(),
+  "mapsUrl": zod.string().regex(updateRoomPreferencesResponseShortlistItemVenueMapsUrlRegExp)
+}).optional()
 })),
   "voteTotals": zod.array(zod.object({
   "planId": zod.string(),
@@ -221,7 +282,8 @@ export const UpdateRoomPreferencesResponse = zod.object({
   "distance": zod.enum(['nearby', '5km', '10km', 'anywhere']),
   "hardNos": zod.array(zod.enum(['crowds', 'long-drives', 'loud-venues', 'spicy-food', 'late-nights']))
 }).nullable(),
-  "viewerVotes": zod.record(zod.string(), zod.enum(['love', 'works', 'no']))
+  "viewerVotes": zod.record(zod.string(), zod.enum(['love', 'works', 'no'])),
+  "venueStatus": zod.enum(['nearby-ready', 'nearby-results', 'fallback-no-location', 'fallback-provider-unavailable', 'fallback-no-results'])
 })
 
 
@@ -235,6 +297,9 @@ export const UpdateRoomVotesParams = zod.object({
 export const UpdateRoomVotesBody = zod.object({
   "votes": zod.record(zod.string(), zod.enum(['love', 'works', 'no']))
 })
+
+export const updateRoomVotesResponseShortlistItemVenueMapsUrlRegExp = new RegExp('^https://www\\.google\\.com/maps');
+
 
 export const UpdateRoomVotesResponse = zod.object({
   "slug": zod.string(),
@@ -254,7 +319,15 @@ export const UpdateRoomVotesResponse = zod.object({
   "budget": zod.string().optional(),
   "distance": zod.string().optional(),
   "matchPercent": zod.number(),
-  "reasons": zod.array(zod.string())
+  "reasons": zod.array(zod.string()),
+  "venue": zod.object({
+  "category": zod.string(),
+  "address": zod.string(),
+  "distanceMeters": zod.number(),
+  "rating": zod.number().optional(),
+  "openNow": zod.boolean().optional(),
+  "mapsUrl": zod.string().regex(updateRoomVotesResponseShortlistItemVenueMapsUrlRegExp)
+}).optional()
 })),
   "voteTotals": zod.array(zod.object({
   "planId": zod.string(),
@@ -272,7 +345,8 @@ export const UpdateRoomVotesResponse = zod.object({
   "distance": zod.enum(['nearby', '5km', '10km', 'anywhere']),
   "hardNos": zod.array(zod.enum(['crowds', 'long-drives', 'loud-venues', 'spicy-food', 'late-nights']))
 }).nullable(),
-  "viewerVotes": zod.record(zod.string(), zod.enum(['love', 'works', 'no']))
+  "viewerVotes": zod.record(zod.string(), zod.enum(['love', 'works', 'no'])),
+  "venueStatus": zod.enum(['nearby-ready', 'nearby-results', 'fallback-no-location', 'fallback-provider-unavailable', 'fallback-no-results'])
 })
 
 
@@ -286,6 +360,9 @@ export const UpdateRoomPhaseParams = zod.object({
 export const UpdateRoomPhaseBody = zod.object({
   "phase": zod.enum(['shortlist', 'voting', 'final'])
 })
+
+export const updateRoomPhaseResponseShortlistItemVenueMapsUrlRegExp = new RegExp('^https://www\\.google\\.com/maps');
+
 
 export const UpdateRoomPhaseResponse = zod.object({
   "slug": zod.string(),
@@ -305,7 +382,15 @@ export const UpdateRoomPhaseResponse = zod.object({
   "budget": zod.string().optional(),
   "distance": zod.string().optional(),
   "matchPercent": zod.number(),
-  "reasons": zod.array(zod.string())
+  "reasons": zod.array(zod.string()),
+  "venue": zod.object({
+  "category": zod.string(),
+  "address": zod.string(),
+  "distanceMeters": zod.number(),
+  "rating": zod.number().optional(),
+  "openNow": zod.boolean().optional(),
+  "mapsUrl": zod.string().regex(updateRoomPhaseResponseShortlistItemVenueMapsUrlRegExp)
+}).optional()
 })),
   "voteTotals": zod.array(zod.object({
   "planId": zod.string(),
@@ -323,7 +408,8 @@ export const UpdateRoomPhaseResponse = zod.object({
   "distance": zod.enum(['nearby', '5km', '10km', 'anywhere']),
   "hardNos": zod.array(zod.enum(['crowds', 'long-drives', 'loud-venues', 'spicy-food', 'late-nights']))
 }).nullable(),
-  "viewerVotes": zod.record(zod.string(), zod.enum(['love', 'works', 'no']))
+  "viewerVotes": zod.record(zod.string(), zod.enum(['love', 'works', 'no'])),
+  "venueStatus": zod.enum(['nearby-ready', 'nearby-results', 'fallback-no-location', 'fallback-provider-unavailable', 'fallback-no-results'])
 })
 
 

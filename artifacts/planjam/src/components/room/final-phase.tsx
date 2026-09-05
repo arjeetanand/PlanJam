@@ -1,7 +1,7 @@
 import { Shell } from '@/components/layout/shell';
 import { SectionTitle } from '@/components/ui/section-title';
 import { type RoomState } from '@workspace/api-client-react';
-import { Crown, Heart, Check, Ban, Utensils, Film, Gamepad2, Sun, Waves, PartyPopper, type LucideIcon } from 'lucide-react';
+import { Crown, Heart, Check, Ban, Utensils, Film, Gamepad2, Sun, Waves, PartyPopper, MapPin, Navigation, Star, Clock3, type LucideIcon } from 'lucide-react';
 import { RoomShare } from './room-share';
 
 const PLAN_ICONS: Record<string, LucideIcon> = {
@@ -62,6 +62,19 @@ export function FinalPhase({ room }: { room: RoomState }) {
             </div>
             
             <div className="p-8">
+              {winnerPlan.venue && (
+                <div className="mb-7 rounded-2xl border border-[#D9D7D0] bg-[#F0EDE1] p-4 text-sm text-[#5E6377]">
+                  <p className="flex items-start gap-2"><MapPin size={17} className="mt-0.5 shrink-0 text-[#F26F52]" /> {winnerPlan.venue.address}</p>
+                  <div className="mt-3 flex flex-wrap gap-3 text-xs font-semibold">
+                    <span>{winnerPlan.venue.distanceMeters < 1000 ? `${winnerPlan.venue.distanceMeters} m` : `${(winnerPlan.venue.distanceMeters / 1000).toFixed(1)} km`} away</span>
+                    {winnerPlan.venue.rating !== undefined && <span className="flex items-center gap-1"><Star size={13} fill="#F4B942" className="text-[#F4B942]" /> {winnerPlan.venue.rating.toFixed(1)}</span>}
+                    {winnerPlan.venue.openNow !== undefined && <span className="flex items-center gap-1"><Clock3 size={13} /> {winnerPlan.venue.openNow ? 'Open now' : 'Closed now'}</span>}
+                  </div>
+                  <a href={winnerPlan.venue.mapsUrl} target="_blank" rel="noopener noreferrer" className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#27304C] px-4 py-3 font-bold text-[#FFF7E8]">
+                    <Navigation size={16} /> Open directions
+                  </a>
+                </div>
+              )}
               <h3 className="mb-4 font-mono text-[10px] font-bold uppercase tracking-[.14em] text-[#8A8D9B]">The Score Breakdown</h3>
               <div className="space-y-4">
                 {room.voteTotals.map(vt => {
