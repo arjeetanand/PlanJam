@@ -1,15 +1,15 @@
 import { Shell } from '@/components/layout/shell';
 import { SectionTitle } from '@/components/ui/section-title';
-import { Button } from '@/components/ui/app-button';
-import { 
-  type RoomState, 
+import { useEffect, useRef } from 'react';
+import {
+  type RoomState,
   useUpdateRoomPhase,
-  getGetRoomStateQueryKey 
+  getGetRoomStateQueryKey
 } from '@workspace/api-client-react';
 import { getAuthHeaders } from '@/lib/storage';
 import { queryClient } from '@/lib/query-client';
 import { mergeRoomState } from '@/lib/room-cache';
-import { ArrowRight, Crown, Sparkles, Utensils, Film, Gamepad2, Sun, Waves, PartyPopper, MapPin, Star, Clock3, ExternalLink, type LucideIcon } from 'lucide-react';
+import { Crown, Sparkles, Utensils, Film, Gamepad2, Sun, Waves, PartyPopper, MapPin, Star, Clock3, ExternalLink, LoaderCircle, type LucideIcon } from 'lucide-react';
 import { Roster } from './roster';
 
 const PLAN_ICONS: Record<string, LucideIcon> = {
@@ -33,26 +33,31 @@ const PLAN_COLORS: Record<string, string> = {
 export function ShortlistPhase({ room }: { room: RoomState }) {
   const headers = getAuthHeaders(room.slug);
   const updatePhase = useUpdateRoomPhase({ request: { headers } });
+  const requestedRef = useRef(false);
 
-  const handleOpenVoting = () => {
-    updatePhase.mutate({ slug: room.slug, data: { phase: 'voting' } }, {
-      onSuccess: (data) => {
-        queryClient.setQueryData(getGetRoomStateQueryKey(room.slug), (old: any) => mergeRoomState(old, data));
-      }
-    });
-  };
-
-  const isHost = room.isHost;
+  useEffect(() => {
+    const attempt = () => {
+      if (requestedRef.current || room.phase !== 'shortlist') return;
+      requestedRef.current = true;
+      updatePhase.mutate({ slug: room.slug, data: { phase: 'voting' } }, {
+        onSuccess: (data) => queryClient.setQueryData(getGetRoomStateQueryKey(room.slug), (old: any) => mergeRoomState(old, data)),
+        onError: () => { requestedRef.current = false; },
+      });
+    };
+    const timeout = window.setTimeout(attempt, 1800);
+    const retry = window.setInterval(attempt, 4500);
+    return () => { window.clearTimeout(timeout); window.clearInterval(retry); };
+  }, [room.phase, room.slug, updatePhase]);
 
   return (
     <Shell step={2}>
       <main className="safe-page page-in mx-auto max-w-5xl pb-16 pt-6 sm:pb-20 sm:pt-12">
         <div className="grid gap-8 lg:grid-cols-[minmax(250px,.72fr)_minmax(0,1.28fr)] lg:gap-10 lg:items-start">
           <section>
-            <SectionTitle 
-              eyebrow="02 / group sync" 
-              title="Look at that overlap." 
-               body="We weighted the group’s strongest signals, kept minority picks in the mix, and protected every hard no." 
+            <SectionTitle
+              eyebrow="02 / group sync"
+              title="Look at that overlap."
+               body="We weighted the group’s strongest signals, kept minority picks in the mix, and protected every hard no."
             />
             <div className="rounded-3xl border-2 border-[#27304C] bg-[#27304C] p-4 text-[#FFF7E8] shadow-[6px_6px_0_#F26F52] sm:p-5">
               <div className="flex items-center justify-between">
@@ -68,29 +73,41 @@ export function ShortlistPhase({ room }: { room: RoomState }) {
                 <Roster participants={room.participants} capacity={room.capacity} />
               </div>
             </div>
-            
-            {isHost ? (
-              <div className="mt-8 rounded-2xl border-2 border-[#27304C] bg-[#FFFDF5] p-5 text-center shadow-[4px_4px_0_#27304C]">
-                <h3 className="mb-2 font-display text-lg font-bold text-[#27304C]">Ready to decide?</h3>
-                <p className="mb-4 text-sm text-[#6A6E80]">Everyone will vote on these options.</p>
-                <Button 
-                  onClick={handleOpenVoting} 
-                  disabled={updatePhase.isPending} 
-                  variant="primary" 
-                  className="w-full"
-                  testId="button-open-voting"
-                >
-                  Open Voting <ArrowRight size={16} />
-                </Button>
-                {updatePhase.isError && <p className="mt-3 text-xs font-bold text-[#A83F31]" role="alert" data-testid="status-voting-error">Couldn’t open voting. Try again.</p>}
+
+            <div
+              className="mt-8 rounded-2xl border-2 border-[#27304C] bg-[#FFFDF5] p-5 shadow-[4px_4px_0_#27304C] focus:outline-none focus-visible:outline-3 focus-visible:outline-[#F26F52] focus-visible:outline-offset-2"
+              tabIndex={0}
+              role="region"
+              aria-label="Voting transition status"
+              data-testid="status-voting-transition"
+            >
+              <div className="flex items-center gap-3">
+                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#B7DBD7] text-[#1F655B]">
+                  <LoaderCircle size={19} className="animate-spin" />
+                </span>
+                <div>
+                  <h3 className="font-display text-lg font-bold text-[#27304C]">The vote is next</h3>
+                  <p className="mt-1 text-sm leading-5 text-[#6A6E80]">Take a quick look. Voting opens automatically.</p>
+                </div>
               </div>
-            ) : (
-              <div className="mt-8 rounded-2xl border border-[#D9D7D0] bg-[#FFF7E8]/80 p-5 text-center">
-                <p className="text-sm font-medium text-[#6A6E80]">
-                  Waiting for host ({room.participants[0]?.name}) to open voting...
-                </p>
-              </div>
-            )}
+              <button
+                type="button"
+                onClick={() => {
+                  if (requestedRef.current || room.phase !== 'shortlist') return;
+                  requestedRef.current = true;
+                  updatePhase.mutate({ slug: room.slug, data: { phase: 'voting' } }, {
+                    onSuccess: (data) => queryClient.setQueryData(getGetRoomStateQueryKey(room.slug), (old: any) => mergeRoomState(old, data)),
+                    onError: () => { requestedRef.current = false; },
+                  });
+                }}
+                disabled={updatePhase.isPending}
+                className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#27304C] px-4 py-2.5 text-xs font-bold uppercase tracking-wider text-[#FFF7E8] transition-all hover:bg-[#3B4668] active:translate-y-0.5"
+                data-testid="button-open-voting"
+              >
+                <span>Jump to voting now</span>
+              </button>
+              {updatePhase.isError && <p className="mt-3 text-xs font-bold text-[#A83F31]" role="alert" data-testid="status-voting-error">Couldn’t open voting yet. We’ll keep trying.</p>}
+            </div>
           </section>
 
           <section>
@@ -117,7 +134,7 @@ export function ShortlistPhase({ room }: { room: RoomState }) {
               {room.shortlist.map((plan, index) => {
                 const Icon = PLAN_ICONS[plan.category] || Utensils;
                 const colorClass = PLAN_COLORS[plan.category] || 'bg-[#D9D7D0]';
-                
+
                 return (
                   <article key={plan.id} data-testid={`card-plan-${plan.id}`} className="group rounded-2xl border border-[#D9D7D0] bg-[#FFF7E8]/85 p-3.5 transition-all duration-200 hover:-translate-y-1 hover:border-[#27304C] hover:shadow-[4px_4px_0_#27304C] sm:p-5">
                     <div className="flex gap-3 sm:gap-4">

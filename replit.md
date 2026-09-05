@@ -29,10 +29,11 @@ PlanJam helps a group of four friends turn competing preferences into one shared
 
 ## Architecture decisions
 
-- The planning flow remains local-state and frontend-first because the hackathon demo does not need saved plans or shared sessions.
+- The planning flow is intentionally a short-lived shared room: no account is required to create, join, or finish a plan.
+- Room progression is readiness-driven. The last preference submission builds the shortlist, the shortlist opens voting automatically, and the final vote reveals the result.
 - Clerk provides managed authentication with branded sign-in/sign-up routes; the public landing page remains available to signed-out visitors.
-- Wouter routes the five lightweight states so each step can be previewed and revisited without adding a backend.
-- Friend preferences and recommendations are intentionally simulated to keep the core demo fast and self-contained.
+- Wouter routes the lightweight states so each step can be previewed and revisited without adding extra navigation.
+- Friend preferences and recommendations are intentionally simulated/curated to keep the core loop fast and self-contained.
 
 ## Product
 

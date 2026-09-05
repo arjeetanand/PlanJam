@@ -52,61 +52,88 @@ export function HomePage() {
 
   return (
     <Shell>
-      <main className="safe-page page-in mx-auto grid w-full max-w-6xl gap-10 pb-14 pt-6 sm:gap-12 sm:pb-20 sm:pt-10 lg:grid-cols-[.9fr_1.1fr] lg:items-center lg:gap-16 lg:pt-16">
+      <main className="safe-page page-in mx-auto grid w-full max-w-6xl gap-10 pb-14 pt-6 sm:gap-12 sm:pb-20 sm:pt-10 lg:grid-cols-[.9fr_1.1fr] lg:items-center lg:gap-16 lg:pt-8">
         <section>
           <div className="mb-6 inline-flex rotate-[-2deg] items-center gap-2 rounded-full border border-[#D6CDAA] bg-[#FFF1A9] px-3.5 py-2 text-xs font-bold text-[#5D5121] shadow-[3px_3px_0_#D6CDAA]">
             <Sparkles size={15} /> the group chat, but useful
           </div>
           <p className="mb-4 font-mono text-[11px] font-medium uppercase tracking-[.2em] text-[#F26F52]">planning something with friends?</p>
-          <h1 className="font-display max-w-xl text-[clamp(3.7rem,10vw,7.6rem)] font-bold leading-[.86] tracking-[-0.085em] text-[#27304C]">
+          <h1 className="font-display max-w-xl text-[clamp(2.5rem,7.5vw,5.2rem)] font-bold leading-[.88] tracking-[-0.08em] text-[#27304C]">
             Too many
             <span className="relative mt-2 block text-[#F26F52]">
               opinions.
-              <span className="absolute -bottom-3 left-1 h-2 w-[64%] -rotate-2 rounded-full bg-[#FFE48B]" />
+              <span className="absolute -bottom-2 left-1 h-2 w-[64%] -rotate-2 rounded-full bg-[#FFE48B]" />
             </span>
             <span className="mt-2 block">One plan.</span>
           </h1>
-          <p className="mt-8 max-w-md text-base leading-7 text-[#5E6377] sm:mt-9 sm:text-lg">
+          <p className="mt-6 max-w-md text-base leading-7 text-[#5E6377] sm:mt-7 sm:text-lg">
             PlanJam turns scattered “I’m easy”s into a real decision. Everyone picks, the overlap appears, and the crew votes one good plan into existence.
           </p>
-          
-          <form onSubmit={handleStart} className="mt-9 flex flex-col gap-4">
-            <div className="flex w-full max-w-md flex-col gap-2 sm:flex-row sm:items-center">
+
+          <form onSubmit={handleStart} className="mt-6 flex flex-col gap-4 sm:mt-8">
+            <div className="flex w-full max-w-lg flex-col gap-2.5 sm:flex-row sm:items-center">
               <label htmlFor="host-name" className="sr-only">Your name</label>
-              <input 
+              <input
                 id="host-name"
-                type="text" 
-                placeholder="Your name" 
+                type="text"
+                placeholder={isSignedIn && user?.firstName ? `Hi ${user.firstName}! Ready to start?` : "What should friends call you?"}
                 value={name}
                 onChange={e => setName(e.target.value)}
                 required={!isSignedIn}
-                className="w-full min-w-0 rounded-full border border-[#D9D7D0] bg-[#FFFDF5] px-4 py-3.5 text-base font-bold text-[#27304C] outline-none focus:border-[#F26F52] focus:ring-2 focus:ring-[#F26F52]/20 sm:w-48"
+                className="w-full flex-1 min-w-0 rounded-full border-2 border-[#27304C] bg-[#FFFDF5] px-5 py-3.5 text-base font-bold text-[#27304C] shadow-[3px_3px_0_#27304C] outline-none transition-all placeholder:font-medium placeholder:text-[#9B9CA6] focus:border-[#F26F52] focus:ring-2 focus:ring-[#F26F52]/20"
                 data-testid="input-host-name"
               />
-              <Button type="submit" disabled={createRoom.isPending} testId="button-start-planning" className="w-full px-7 py-3.5 text-base whitespace-nowrap sm:w-auto">
-                {createRoom.isPending ? 'Starting...' : 'Start a room'} <ArrowRight size={18} strokeWidth={2.5} />
+              <Button
+                type="submit"
+                disabled={createRoom.isPending}
+                loading={createRoom.isPending}
+                testId="button-start-planning"
+                className="w-full px-7 py-3.5 text-base whitespace-nowrap sm:w-auto"
+              >
+                {createRoom.isPending ? 'Starting room…' : 'Start a room'} <ArrowRight size={18} strokeWidth={2.5} />
               </Button>
             </div>
-            <div className="max-w-md rounded-2xl border border-[#D9D7D0] bg-[#FFFDF5]/80 p-4">
+            <div className="max-w-lg rounded-2xl border-2 border-[#27304C] bg-[#FFFDF5]/90 p-4 shadow-[3px_3px_0_#D9D7D0]">
               <div className="flex items-start gap-3">
-                <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-[#B7DBD7] text-[#27304C]"><MapPin size={18} /></span>
-                <div className="min-w-0">
-                  <strong className="block text-sm text-[#27304C]">Find real places nearby?</strong>
-                  <p className="mt-1 text-xs leading-5 text-[#717589]">Optional. Your location anchors suggestions for the room, is reduced before storage, and is never shown to guests.</p>
-                  <div className="mt-3 flex flex-wrap items-center gap-2">
-                    <button type="button" onClick={requestLocation} disabled={locationState === 'requesting'} className="inline-flex items-center gap-1.5 rounded-full border border-[#27304C] bg-[#27304C] px-3 py-2 text-xs font-bold text-[#FFF7E8] disabled:opacity-60" data-testid="button-use-location">
-                      <LocateFixed size={14} /> {locationState === 'requesting' ? 'Locating…' : locationState === 'ready' ? 'Location ready' : 'Use my location'}
-                    </button>
-                    <button type="button" onClick={() => { setRoomLocation(undefined); setLocationState('skipped'); }} className="px-2 py-2 text-xs font-bold text-[#6A6E80]" data-testid="button-skip-location">Skip</button>
+                <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-[#B7DBD7] text-[#27304C] shadow-sm"><MapPin size={19} /></span>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <strong className="block text-sm font-bold text-[#27304C]">Find real places nearby?</strong>
+                    <span className="rounded-full bg-[#E8E3D2] px-2 py-0.5 font-mono text-[9px] font-bold uppercase text-[#717589]">optional</span>
                   </div>
-                  {locationState === 'ready' && <p className="mt-2 flex items-center gap-1 text-xs font-semibold text-[#277865]" role="status" data-testid="status-location-ready"><ShieldCheck size={13} /> Ready for nearby suggestions</p>}
-                  {locationState === 'unavailable' && <p className="mt-2 text-xs text-[#A83F31]" role="status" data-testid="status-location-unavailable">Location wasn’t available. You can still start with curated ideas.</p>}
-                  {locationState === 'skipped' && <p className="mt-2 text-xs text-[#717589]" role="status" data-testid="status-location-skipped">No problem — curated suggestions will be used.</p>}
+                  <p className="mt-1 text-xs leading-5 text-[#717589]">Anchors suggestions for the room, is reduced before storage, and is never shared with guests.</p>
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={requestLocation}
+                      disabled={locationState === 'requesting'}
+                      className={`inline-flex items-center gap-1.5 rounded-full border-2 border-[#27304C] px-3.5 py-2 text-xs font-bold transition-all disabled:opacity-60 ${locationState === 'ready' ? 'bg-[#37A28C] text-[#FFF7E8] shadow-[2px_2px_0_#27304C]' : 'bg-[#27304C] text-[#FFF7E8] shadow-[2px_2px_0_#F26F52] hover:-translate-y-0.5'}`}
+                      data-testid="button-use-location"
+                    >
+                      <LocateFixed size={14} className={locationState === 'requesting' ? 'animate-spin' : ''} />
+                      {locationState === 'requesting' ? 'Locating…' : locationState === 'ready' ? 'Location ready' : 'Use my location'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setRoomLocation(undefined); setLocationState('skipped'); }}
+                      className="rounded-full px-3 py-2 text-xs font-bold text-[#6A6E80] hover:bg-[#EDE9DB]/60 hover:text-[#27304C]"
+                      data-testid="button-skip-location"
+                    >
+                      Skip
+                    </button>
+                  </div>
+                  {locationState === 'ready' && <p className="mt-2.5 flex items-center gap-1.5 text-xs font-bold text-[#277865]" role="status" data-testid="status-location-ready"><ShieldCheck size={14} /> Ready for real nearby suggestions</p>}
+                  {locationState === 'unavailable' && <p className="mt-2.5 text-xs font-semibold text-[#A83F31]" role="status" data-testid="status-location-unavailable">Location wasn’t available. Starting with curated ideas instead.</p>}
+                  {locationState === 'skipped' && <p className="mt-2.5 text-xs font-medium text-[#717589]" role="status" data-testid="status-location-skipped">No problem — curated suggestions will be used.</p>}
                 </div>
               </div>
             </div>
-            {createRoom.isError && <p className="max-w-md rounded-xl border border-[#F1B1A6] bg-[#FFD9D3]/70 px-3 py-2 text-xs font-bold text-[#A83F31]" role="alert" data-testid="status-start-room-error">We couldn't start that room. Try again in a moment.</p>}
-            <span className="inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[.12em] text-[#8A8D9B]"><Clock3 size={13} /> takes 60 seconds</span>
+            {createRoom.isError && <p className="max-w-lg rounded-xl border border-[#F1B1A6] bg-[#FFD9D3] p-3 text-xs font-bold text-[#A83F31]" role="alert" data-testid="status-start-room-error">We couldn't start that room. Try again in a moment.</p>}
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[.12em] text-[#8A8D9B]"><Clock3 size={13} /> takes 60 seconds</span>
+              <span className="text-[#D9D7D0]">·</span>
+              <span className="font-mono text-[11px] uppercase tracking-[.12em] text-[#8A8D9B]">up to 10 friends</span>
+            </div>
           </form>
 
           <div className="mt-12 flex items-center gap-3 border-t border-[#D6D6DF] pt-5 text-sm text-[#717589]">
@@ -117,16 +144,16 @@ export function HomePage() {
                 </span>
               ))}
             </div>
-               <span>up to ten friends. one shared yes.</span>
+               <span>no account needed. one shared yes.</span>
           </div>
         </section>
 
-        <section className="relative min-h-[400px] sm:min-h-[500px]" aria-label="How PlanJam turns opinions into a plan">
+        <section className="relative min-h-[400px] overflow-clip py-4 sm:min-h-[500px]" aria-label="How PlanJam turns opinions into a plan">
           <div className="absolute left-[6%] top-[5%] h-20 w-20 rounded-[28px] border-2 border-[#27304C] bg-[#FFE48B] rotate-12 sm:h-28 sm:w-28" />
           <div className="absolute right-[4%] top-[8%] h-16 w-16 rounded-full border-2 border-[#27304C] bg-[#B7DBD7] sm:h-24 sm:w-24" />
           <div className="absolute bottom-[7%] left-[3%] h-20 w-20 rounded-[50%_50%_45%_45%] border-2 border-[#27304C] bg-[#FFB59F] rotate-[-16deg] sm:h-28 sm:w-28" />
           <div className="absolute bottom-[8%] right-[7%] h-14 w-14 border-2 border-[#27304C] bg-[#D6D7FF] rotate-45 sm:h-20 sm:w-20" />
-          <div className="floaty relative mx-auto mt-3 max-w-[440px] rounded-[30px] border-2 border-[#27304C] bg-[#FFF7E8] p-5 shadow-[10px_11px_0_#27304C] sm:mt-8 sm:p-7">
+          <div className="floaty relative mx-auto mt-3 max-w-[440px] rounded-[30px] border-2 border-[#27304C] bg-[#FFF7E8] p-5 shadow-[6px_6px_0_#27304C] sm:mt-8 sm:p-7 sm:shadow-[10px_11px_0_#27304C]">
             <div className="mb-5 flex items-center justify-between">
               <div>
                 <p className="font-mono text-[10px] uppercase tracking-[.16em] text-[#8A8D9B]">from “whatever works”</p>

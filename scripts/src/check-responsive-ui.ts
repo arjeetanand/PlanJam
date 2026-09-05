@@ -288,18 +288,25 @@ async function prepareRoomAtPhase(targetPhase: "shortlist" | "voting" | "final",
       body: JSON.stringify(selection),
     });
   }
-  let state = await request<RoomState>(`/rooms/${room.slug}/phase`, {
-    method: "PUT",
-    headers: authHeaders({ hostToken: room.hostToken }),
-    body: JSON.stringify({ phase: "shortlist" }),
+  let state = await request<RoomState>(`/rooms/${room.slug}/state`, {
+    headers: authHeaders({ participantToken: room.participantToken }),
   });
+  if (state.phase === "preferences") {
+    state = await request<RoomState>(`/rooms/${room.slug}/phase`, {
+      method: "PUT",
+      headers: authHeaders({ hostToken: room.hostToken }),
+      body: JSON.stringify({ phase: "shortlist" }),
+    });
+  }
   if (targetPhase === "shortlist") return { ...room, ...state };
 
-  state = await request<RoomState>(`/rooms/${room.slug}/phase`, {
-    method: "PUT",
-    headers: authHeaders({ hostToken: room.hostToken }),
-    body: JSON.stringify({ phase: "voting" }),
-  });
+  if (state.phase === "shortlist") {
+    state = await request<RoomState>(`/rooms/${room.slug}/phase`, {
+      method: "PUT",
+      headers: authHeaders({ participantToken: room.participantToken }),
+      body: JSON.stringify({ phase: "voting" }),
+    });
+  }
   if (targetPhase === "voting") return { ...room, ...state };
 
   const votes = Object.fromEntries(state.shortlist.map((plan, index) => [plan.id, index === 0 ? "love" : "works"]));
@@ -310,10 +317,8 @@ async function prepareRoomAtPhase(targetPhase: "shortlist" | "voting" | "final",
       body: JSON.stringify({ votes }),
     });
   }
-  state = await request<RoomState>(`/rooms/${room.slug}/phase`, {
-    method: "PUT",
-    headers: authHeaders({ hostToken: room.hostToken }),
-    body: JSON.stringify({ phase: "final" }),
+  state = await request<RoomState>(`/rooms/${room.slug}/state`, {
+    headers: authHeaders({ participantToken: room.participantToken }),
   });
   return { ...room, ...state };
 }
@@ -551,12 +556,12 @@ async function main(): Promise<void> {
       await assertNoHorizontalOverflow(page, `shortlist phase at ${width}px`);
       await assertVisible(page, '[data-testid^="card-plan-"]', "shortlist phase");
       await assertVisible(page, '[data-testid="roster-readiness-summary"]', "shortlist phase readiness");
-      await assertVisible(page, '[data-testid="button-open-voting"]', "shortlist phase");
+      await assertVisible(page, '[data-testid="status-voting-transition"]', "shortlist phase");
     });
     await page.navigate(`${webOrigin}/room/${shortlistRoom.slug}`);
     await page.waitFor('[data-testid^="card-plan-"]');
     await assertKeyboardFocus(page, "shortlist phase", [
-      '[data-testid="button-open-voting"]',
+      '[data-testid^="button-roster-member-"]',
     ]);
 
     await setRoomTokens(page, votingRoom);
@@ -565,7 +570,7 @@ async function main(): Promise<void> {
       await page.waitFor('[data-testid^="vote-plan-"]');
       await assertNoHorizontalOverflow(page, `voting phase at ${width}px`);
       await assertVisible(page, '[data-testid^="vote-love-"]', "voting phase");
-      await assertVisible(page, '[data-testid="button-show-results"]', "voting phase");
+      await assertVisible(page, '[data-testid="status-voting-progress"]', "voting phase");
       await page.click('[data-testid^="vote-love-"]');
       const pressed = await page.run<boolean>(() => document.querySelector('[data-testid^="vote-love-"]')?.getAttribute("aria-pressed") === "true");
       assert(pressed, "vote feedback did not mark the selected vote as pressed");

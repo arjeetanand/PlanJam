@@ -140,18 +140,6 @@ async function main(): Promise<void> {
   assertAllSelections(hostViewAfterGuestUpdate, { [guestName]: guestSelection });
   assert(participant(hostViewAfterGuestUpdate, hostName).selection === null, "Waiting host should not have stale selection data");
 
-  const hostUpdate = await request<RoomState>(`/rooms/${room.slug}/preferences`, {
-    method: "PUT",
-    headers: headers({ participantToken: room.participantToken }),
-    body: JSON.stringify(hostSelection),
-  });
-  assertAllSelections(hostUpdate, { [hostName]: hostSelection, [guestName]: guestSelection });
-
-  const participantView = await request<RoomState>(`/rooms/${room.slug}/state`, {
-    headers: headers({ participantToken: credentials.participantToken }),
-  });
-  assertAllSelections(participantView, { [hostName]: hostSelection, [guestName]: guestSelection });
-
   const guestChange = await request<RoomState>(`/rooms/${room.slug}/preferences`, {
     method: "PUT",
     headers: headers({ participantToken: credentials.participantToken }),
@@ -162,10 +150,15 @@ async function main(): Promise<void> {
   const anonymousAfterChange = await request<RoomState>(`/rooms/${room.slug}/state`);
   assertAllRedacted(anonymousAfterChange);
 
-  const shortlistResponse = await request<RoomState>(`/rooms/${room.slug}/phase`, {
+  const hostUpdate = await request<RoomState>(`/rooms/${room.slug}/preferences`, {
     method: "PUT",
-    headers: headers({ hostToken: credentials.hostToken }),
-    body: JSON.stringify({ phase: "shortlist" }),
+    headers: headers({ participantToken: room.participantToken }),
+    body: JSON.stringify(hostSelection),
+  });
+  assertAllSelections(hostUpdate, { [hostName]: hostSelection, [guestName]: updatedGuestSelection });
+
+  const shortlistResponse = await request<RoomState>(`/rooms/${room.slug}/state`, {
+    headers: headers({ participantToken: credentials.participantToken }),
   });
   assert(shortlistResponse.phase === "shortlist", "Room did not enter shortlist phase");
   assertAllSelections(shortlistResponse, { [hostName]: hostSelection, [guestName]: updatedGuestSelection });
@@ -175,7 +168,7 @@ async function main(): Promise<void> {
 
   const votingResponse = await request<RoomState>(`/rooms/${room.slug}/phase`, {
     method: "PUT",
-    headers: headers({ hostToken: credentials.hostToken }),
+    headers: headers({ participantToken: credentials.participantToken }),
     body: JSON.stringify({ phase: "voting" }),
   });
   assert(votingResponse.phase === "voting", "Room did not enter voting phase");

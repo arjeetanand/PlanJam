@@ -202,6 +202,22 @@ export async function savePreferences(room: typeof roomsTable.$inferSelect, toke
       .onConflictDoUpdate({ target: preferencesTable.participantId, set: { ...input, updatedAt: new Date() } });
     return currentRoom;
   });
+  // The last participant to submit preferences can safely kick off the next
+  // phase. `advancePhase` takes the room lock again and re-checks readiness,
+  // so concurrent submissions cannot generate two different shortlists.
+  const members = await db.select().from(participantsTable).where(eq(participantsTable.roomId, lockedRoom.id));
+  const prefs = members.length
+    ? await db.select().from(preferencesTable).where(inArray(preferencesTable.participantId, members.map((member) => member.id)))
+    : [];
+  if (lockedRoom.phase === "preferences" && members.length >= 2 && prefs.length === members.length) {
+    try {
+      return await advancePhase(lockedRoom, undefined, token, "shortlist");
+    } catch (error) {
+      // Another participant may have won the transition race. Their result is
+      // still visible through the normal polling path.
+      if (!(error instanceof RoomError) || error.status !== 409 || error.message !== "Room cannot move to shortlist") throw error;
+    }
+  }
   return roomState(lockedRoom, token);
 }
 
@@ -224,17 +240,37 @@ export async function saveVotes(room: typeof roomsTable.$inferSelect, token: str
     await tx.insert(votesTable).values(ids.map((planId) => ({ participantId: participant.id, planId, vote: values[planId] })));
     return currentRoom;
   });
+  const members = await db.select().from(participantsTable).where(eq(participantsTable.roomId, lockedRoom.id));
+  const votes = members.length
+    ? await db.select().from(votesTable).where(inArray(votesTable.participantId, members.map((member) => member.id)))
+    : [];
+  if (lockedRoom.phase === "voting" && members.length > 0 && votes.length === members.length * lockedRoom.shortlist.length) {
+    try {
+      return await advancePhase(lockedRoom, undefined, token, "final");
+    } catch (error) {
+      if (!(error instanceof RoomError) || error.status !== 409 || error.message !== "Room cannot move to final") throw error;
+    }
+  }
   return roomState(lockedRoom, token);
 }
 
 export async function advancePhase(room: typeof roomsTable.$inferSelect, hostToken: string | undefined, participantToken: string | undefined, phase: string) {
-  if (!hostToken || hashToken(hostToken) !== room.hostTokenHash) throw new RoomError(403, "Valid host token required");
+  const hostAuthorized = !!hostToken && hashToken(hostToken) === room.hostTokenHash;
+  const participant = participantToken ? await participantForToken(room.id, participantToken) : undefined;
+  // Automatic progression is a room capability, not a host-only action. A
+  // valid participant may advance a ready room; the transaction below still
+  // validates the exact phase and completion conditions.
+  if (!hostAuthorized && !participant) throw new RoomError(403, "Valid room participant required");
   const updated = await db.transaction(async (tx) => {
     await tx.execute(sql`select id from ${roomsTable} where id = ${room.id} for update`);
     const [lockedRoom] = await tx.select().from(roomsTable).where(eq(roomsTable.id, room.id));
     if (!lockedRoom) throw new RoomError(404, "Room not found");
     if (lockedRoom.expiresAt <= new Date()) throw new RoomError(410, "Room has expired");
-    if (hashToken(hostToken) !== lockedRoom.hostTokenHash) throw new RoomError(403, "Valid host token required");
+    const lockedHostAuthorized = !!hostToken && hashToken(hostToken) === lockedRoom.hostTokenHash;
+    const lockedParticipant = participantToken
+      ? (await tx.select().from(participantsTable).where(and(eq(participantsTable.roomId, lockedRoom.id), eq(participantsTable.tokenHash, hashToken(participantToken)))))[0]
+      : undefined;
+    if (!lockedHostAuthorized && !lockedParticipant) throw new RoomError(403, "Valid room participant required");
     const participants = await tx.select().from(participantsTable).where(eq(participantsTable.roomId, lockedRoom.id));
     if (phase === "shortlist") {
       if (lockedRoom.phase !== "preferences") throw new RoomError(409, "Room cannot move to shortlist");

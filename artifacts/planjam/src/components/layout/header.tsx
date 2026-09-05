@@ -37,20 +37,15 @@ function AccountControl() {
   }
 
   return (
-    <div className="flex items-center gap-1 max-[374px]:gap-0">
-      <Link href="/sign-in" className="inline-flex min-h-11 items-center rounded-full px-2.5 py-2 text-xs font-bold text-[#6A6E80] transition-colors hover:text-[#F26F52] max-[374px]:px-1.5" data-testid="link-sign-in">
-        Sign in
-      </Link>
-      <Link href="/sign-up" className="inline-flex min-h-11 items-center rounded-full bg-[#27304C] px-3.5 py-2 text-xs font-bold text-[#FFF7E8] shadow-[2px_2px_0_#F26F52] transition-transform hover:-translate-y-0.5 max-[374px]:px-2" data-testid="link-sign-up">
-        <span className="hidden min-[375px]:inline">Join the crew</span><span className="min-[375px]:hidden">Join</span>
-      </Link>
-    </div>
+    <Link href="/sign-in" className="inline-flex min-h-11 items-center rounded-full border border-[#D9D7D0] bg-[#FFF7E8]/80 px-3.5 py-2 text-xs font-bold text-[#6A6E80] transition-colors hover:border-[#F26F52] hover:text-[#F26F52] max-[374px]:px-2" data-testid="link-sign-in">
+      Sign in
+    </Link>
   );
 }
 
 export function Header({ step }: { step?: number }) {
   return (
-    <header className="mx-auto flex w-full max-w-6xl items-center justify-between gap-3 px-4 py-4 sm:px-8 sm:py-5">
+    <header className="safe-page mx-auto flex w-full max-w-6xl items-center justify-between gap-2 py-3.5 sm:gap-4 sm:py-5">
       <Logo />
       <div className="flex min-w-0 items-center gap-2 sm:gap-5">
         {step ? (

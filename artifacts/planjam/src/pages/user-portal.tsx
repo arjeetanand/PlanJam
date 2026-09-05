@@ -36,10 +36,10 @@ export function UserPortal() {
         <main className="safe-page page-in mx-auto max-w-4xl py-8 sm:py-12">
         <div className="mb-12">
           <p className="font-mono text-[10px] font-bold uppercase tracking-[.18em] text-[#F26F52]">your planning desk</p>
-          <h1 className="mt-3 font-display text-[clamp(2.6rem,7vw,4rem)] font-bold leading-[.94] tracking-[-.07em] text-[#27304C]">
+          <h1 className="mt-3 font-display text-[clamp(2rem,6.5vw,3.75rem)] font-bold leading-[.94] tracking-[-.07em] text-[#27304C] break-words">
             Welcome back, {user?.firstName || 'Friend'}.
           </h1>
-          <p className="mt-2 text-[#6A6E80]">Ready to stop debating and start doing?</p>
+          <p className="mt-2 text-sm sm:text-base text-[#6A6E80]">Ready to stop debating and start doing?</p>
         </div>
 
         <div className="grid gap-5 sm:grid-cols-[minmax(0,1.1fr)_minmax(240px,.9fr)]">

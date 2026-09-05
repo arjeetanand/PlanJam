@@ -49,18 +49,21 @@ export function FinalPhase({ room }: { room: RoomState }) {
 
         {winnerPlan ? (
           <>
-           <div className="rise-in mx-auto max-w-lg overflow-hidden rounded-[28px] border-2 border-[#27304C] bg-[#FFFDF5] shadow-[8px_8px_0_#F26F52] sm:rounded-[32px] sm:shadow-[12px_12px_0_#F26F52]">
-            <div className={`p-8 text-center ${PLAN_COLORS[winnerPlan.category] || 'bg-[#FFE48B]'} border-b-2 border-[#27304C]`}>
-              <div className="mx-auto mb-4 grid h-20 w-20 place-items-center rounded-2xl bg-[#27304C] text-[#FFF7E8] shadow-[4px_4px_0_#FFF7E8]">
+           <div className="rise-in mx-auto max-w-lg overflow-hidden rounded-[24px] border-2 border-[#27304C] bg-[#FFFDF5] shadow-[5px_5px_0_#F26F52] sm:rounded-[32px] sm:shadow-[8px_8px_0_#F26F52] min-[540px]:shadow-[12px_12px_0_#F26F52]">
+            <div className={`p-6 sm:p-8 text-center ${PLAN_COLORS[winnerPlan.category] || 'bg-[#FFE48B]'} border-b-2 border-[#27304C] relative`}>
+              <span className="absolute top-3 right-3 sm:top-4 sm:right-4 inline-flex items-center gap-1 rounded-full bg-[#27304C] px-2.5 py-0.5 sm:px-3 sm:py-1 font-mono text-[9px] sm:text-[10px] font-bold uppercase tracking-wider text-[#FFE48B]">
+                <Crown size={12} /> Winner
+              </span>
+              <div className="mx-auto mb-3 sm:mb-4 grid h-16 w-16 sm:h-20 sm:w-20 place-items-center rounded-2xl bg-[#27304C] text-[#FFF7E8] shadow-[3px_3px_0_#FFF7E8] sm:shadow-[4px_4px_0_#FFF7E8]">
                 {(() => {
                   const Icon = PLAN_ICONS[winnerPlan.category] || Crown;
-                  return <Icon size={36} />;
+                  return <Icon size={30} className="sm:h-9 sm:w-9" />;
                 })()}
               </div>
-              <h2 className="font-display text-3xl font-bold tracking-[-.04em] text-[#27304C]" data-testid="text-winning-plan">
+              <h2 className="font-display text-2xl sm:text-3xl font-bold tracking-[-.04em] text-[#27304C] break-words" data-testid="text-winning-plan">
                 {winnerPlan.name}
               </h2>
-              <p className="mt-2 text-sm font-semibold text-[#5D5121] opacity-80">{winnerPlan.detail}</p>
+              <p className="mt-1.5 text-xs sm:text-sm font-semibold text-[#5D5121] opacity-90">{winnerPlan.detail}</p>
             </div>
             
              <div className="p-5 sm:p-8">
@@ -72,7 +75,7 @@ export function FinalPhase({ room }: { room: RoomState }) {
                     {winnerPlan.venue.rating !== undefined && <span className="flex items-center gap-1"><Star size={13} fill="#F4B942" className="text-[#F4B942]" /> {winnerPlan.venue.rating.toFixed(1)}</span>}
                     {winnerPlan.venue.openNow !== undefined && <span className="flex items-center gap-1"><Clock3 size={13} /> {winnerPlan.venue.openNow ? 'Open now' : 'Closed now'}</span>}
                   </div>
-                   <a href={winnerPlan.venue.mapsUrl} target="_blank" rel="noopener noreferrer" className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-[#27304C] px-4 py-3 font-bold text-[#FFF7E8]" data-testid="link-winner-directions">
+                   <a href={winnerPlan.venue.mapsUrl} target="_blank" rel="noopener noreferrer" className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-[#27304C] px-4 py-3 font-bold text-[#FFF7E8] shadow-[0_3px_0_#171D2F] transition-all hover:bg-[#3B4668] active:translate-y-0.5" data-testid="link-winner-directions">
                     <Navigation size={16} /> Open directions
                   </a>
                 </div>
@@ -86,15 +89,20 @@ export function FinalPhase({ room }: { room: RoomState }) {
                   const isWinner = vt.planId === room.winner;
                   
                   return (
-                     <div key={vt.planId} className={`rounded-xl border p-4 ${isWinner ? 'border-[#27304C] bg-[#FFF7E8]' : 'border-[#D9D7D0] bg-transparent'}`} data-testid={`score-plan-${vt.planId}`}>
+                     <div key={vt.planId} className={`rounded-2xl border-2 p-4 transition-colors ${isWinner ? 'border-[#27304C] bg-[#FFF7E8] shadow-sm' : 'border-[#D9D7D0] bg-[#FFFDF5]'}`} data-testid={`score-plan-${vt.planId}`}>
                       <div className="mb-3 flex items-center justify-between">
-                        <span className="font-bold text-[#27304C]">{plan.name}</span>
-                        <span className="rounded-full bg-[#E8E3D2] px-2 py-0.5 font-mono text-[10px] font-bold">{vt.score} pts</span>
+                        <span className="font-bold text-[#27304C] flex items-center gap-1.5">
+                          {plan.name}
+                          {isWinner && <Crown size={14} className="text-[#F26F52]" />}
+                        </span>
+                        <span className={`rounded-full px-2.5 py-0.5 font-mono text-[10px] font-bold ${isWinner ? 'bg-[#FFE48B] text-[#27304C]' : 'bg-[#E8E3D2] text-[#6A6E80]'}`}>
+                          {vt.score} pts
+                        </span>
                       </div>
-                      <div className="flex gap-4 text-xs font-semibold">
-                        {vt.love > 0 && <span className="flex items-center gap-1 text-[#37A28C]"><Heart size={12} /> {vt.love}</span>}
-                        {vt.works > 0 && <span className="flex items-center gap-1 text-[#27304C]"><Check size={12} /> {vt.works}</span>}
-                        {vt.no > 0 && <span className="flex items-center gap-1 text-[#A83F31]"><Ban size={12} /> {vt.no}</span>}
+                      <div className="flex flex-wrap gap-4 text-xs font-semibold">
+                        {vt.love > 0 && <span className="flex items-center gap-1 text-[#37A28C]"><Heart size={13} fill="#37A28C" /> {vt.love}</span>}
+                        {vt.works > 0 && <span className="flex items-center gap-1 text-[#27304C]"><Check size={13} strokeWidth={3} /> {vt.works}</span>}
+                        {vt.no > 0 && <span className="flex items-center gap-1 text-[#A83F31]"><Ban size={13} /> {vt.no}</span>}
                       </div>
                     </div>
                   );

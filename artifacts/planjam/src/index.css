@@ -83,7 +83,7 @@ body {
 }
 button, a, input { -webkit-tap-highlight-color: transparent; }
 button { min-height: 44px; font: inherit; }
-button:focus-visible, a:focus-visible {
+button:focus-visible, a:focus-visible, [tabindex]:focus-visible {
   outline: 3px solid #F26F52;
   outline-offset: 3px;
 }
