@@ -100,7 +100,7 @@ export function FinalPhase({ room }: { room: RoomState }) {
               </div>
 
               <div className="mt-8 border-t border-[#D9D7D0] pt-6">
-                <RoomShare slug={room.slug} />
+                <RoomShare slug={room.slug} participantCount={room.participants.length} capacity={room.capacity} />
               </div>
             </div>
           </div>

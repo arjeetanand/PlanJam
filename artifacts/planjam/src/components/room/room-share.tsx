@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { Copy, CheckCircle2 } from 'lucide-react';
 
-export function RoomShare({ slug }: { slug: string }) {
+export function RoomShare({ slug, participantCount, capacity }: { slug: string; participantCount: number; capacity: number }) {
   const [copied, setCopied] = useState(false);
   const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
   const shareUrl = `${window.location.origin}${basePath}/room/${slug}`;
+  const spotsRemaining = Math.max(capacity - participantCount, 0);
+  const isFull = spotsRemaining === 0;
 
   const handleCopy = async () => {
     try {
@@ -19,6 +21,13 @@ export function RoomShare({ slug }: { slug: string }) {
   return (
     <div className="rounded-3xl border border-[#D9D7D0] bg-[#FFF7E8]/80 p-5">
       <h3 className="mb-3 font-mono text-[10px] font-bold uppercase tracking-[.14em] text-[#8A8D9B]">Invite Friends</h3>
+      <p aria-live="polite" data-testid="room-capacity-message" className="mb-3 flex items-center gap-2 text-sm font-bold text-[#27304C]">
+        <span>{participantCount}/{capacity} joined</span>
+        <span aria-hidden="true" className="text-[#B0AFB5]">·</span>
+        <span className={isFull ? 'text-[#A83F31]' : 'text-[#37A28C]'}>
+          {isFull ? 'Room is full' : `${spotsRemaining} ${spotsRemaining === 1 ? 'spot' : 'spots'} left`}
+        </span>
+      </p>
       <div className="flex gap-2">
         <input 
           type="text" 

@@ -139,7 +139,7 @@ export function PreferencesPhase({ room }: { room: RoomState }) {
                 : 'This room will use PlanJam’s curated suggestions. No location is shared.'}
             </p>
           </div>
-          <RoomShare slug={room.slug} />
+          <RoomShare slug={room.slug} participantCount={room.participants.length} capacity={room.capacity} />
            <Roster participants={room.participants} capacity={room.capacity} />
           
           <div className="rounded-3xl border-2 border-[#27304C] bg-[#27304C] p-5 text-[#FFF7E8] shadow-[6px_6px_0_#F26F52]">
