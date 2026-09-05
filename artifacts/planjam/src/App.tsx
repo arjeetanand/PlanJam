@@ -1,4 +1,4 @@
-import { useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import {
   ArrowLeft,
   ArrowRight,
@@ -25,7 +25,17 @@ import {
   Waves,
   Zap,
 } from 'lucide-react';
-import { useLocation, Router as WouterRouter } from 'wouter';
+import {
+  ClerkProvider,
+  Show,
+  SignIn,
+  SignUp,
+  useClerk,
+  useUser,
+} from '@clerk/react';
+import { publishableKeyFromHost } from '@clerk/react/internal';
+import { shadcn } from '@clerk/themes';
+import { Route, Switch, useLocation, Router as WouterRouter } from 'wouter';
 
 type Activity = 'Food' | 'Movie' | 'Games' | 'Outdoors' | 'Chill' | 'Party';
 type Vote = 'love' | 'works' | 'no';
@@ -70,6 +80,66 @@ const activityOptions: { label: Activity; sub: string; icon: typeof Utensils; ti
 const budgetOptions = ['₹500', '₹1000', '₹1500', '₹2000+'];
 const distanceOptions = ['Nearby', '5 km', '10 km', 'Anywhere'];
 const noOptions = ['Crowds', 'Long drives', 'Loud venues', 'Spicy food', 'Late nights'];
+
+const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
+const clerkPubKey = publishableKeyFromHost(
+  window.location.hostname,
+  import.meta.env.VITE_CLERK_PUBLISHABLE_KEY,
+);
+const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL;
+
+if (!clerkPubKey) {
+  throw new Error('Missing VITE_CLERK_PUBLISHABLE_KEY in .env file');
+}
+
+const clerkAppearance = {
+  theme: shadcn,
+  cssLayerName: 'clerk',
+  options: {
+    logoPlacement: 'inside' as const,
+    logoLinkUrl: basePath || '/',
+    logoImageUrl: `${window.location.origin}${basePath}/logo.svg`,
+  },
+  variables: {
+    colorPrimary: '#F26F52',
+    colorForeground: '#27304C',
+    colorMutedForeground: '#6A6E80',
+    colorDanger: '#A83F31',
+    colorBackground: '#FFF7E8',
+    colorInput: '#FFFDF5',
+    colorInputForeground: '#27304C',
+    colorNeutral: '#D9D7D0',
+    fontFamily: 'DM Sans, sans-serif',
+    borderRadius: '0.8rem',
+  },
+  elements: {
+    rootBox: 'w-full flex justify-center',
+    cardBox: 'bg-[#FFF7E8] rounded-[24px] w-[440px] max-w-full overflow-hidden border-2 border-[#27304C] shadow-[8px_8px_0_#27304C]',
+    card: '!shadow-none !border-0 !bg-transparent !rounded-none',
+    footer: '!shadow-none !border-0 !bg-transparent !rounded-none',
+    headerTitle: '!text-[#27304C] !text-3xl !font-bold',
+    headerSubtitle: '!text-[#6A6E80]',
+    socialButtonsBlockButtonText: '!text-[#27304C] !font-bold',
+    formFieldLabel: '!text-[#27304C] !font-bold',
+    footerActionLink: '!text-[#F26F52] !font-bold',
+    footerActionText: '!text-[#6A6E80]',
+    dividerText: '!text-[#8A8D9B]',
+    identityPreviewEditButton: '!text-[#F26F52]',
+    formFieldSuccessText: '!text-[#277865]',
+    alertText: '!text-[#A83F31]',
+    logoBox: 'rounded-xl overflow-hidden',
+    logoImage: 'object-contain',
+    socialButtonsBlockButton: '!border-[#D9D7D0] !bg-[#FFFDF5] !rounded-xl',
+    formButtonPrimary: '!bg-[#F26F52] !text-[#FFF7E8] !font-bold !rounded-full !shadow-none',
+    formFieldInput: '!bg-[#FFFDF5] !border-[#D9D7D0] !text-[#27304C] !rounded-xl',
+    footerAction: '!bg-transparent',
+    dividerLine: '!bg-[#D9D7D0]',
+    alert: '!bg-[#FFD9D3] !border-[#F26F52]',
+    otpCodeFieldInput: '!bg-[#FFFDF5] !border-[#D9D7D0] !text-[#27304C]',
+    formFieldRow: 'gap-2',
+    main: 'gap-5',
+  },
+} as const;
 
 const plans: Plan[] = [
   {
@@ -150,22 +220,65 @@ function Header({ onHome, step }: { onHome: () => void; step?: number }) {
   return (
     <header className="mx-auto flex w-full max-w-6xl items-center justify-between px-5 py-5 sm:px-8">
       <Logo onClick={onHome} />
-      {step ? (
-        <div className="flex items-center gap-3" data-testid="status-progress">
-          <span className="hidden font-mono text-[10px] font-medium uppercase tracking-[0.16em] text-[#7C7F91] sm:block">{steps[step - 1].label}</span>
-          <div className="flex gap-1.5" aria-label={`Step ${step} of 4`}>
-            {steps.map((item) => (
-              <span key={item.number} className={`h-1.5 w-7 overflow-hidden rounded-full transition-colors duration-300 sm:w-10 ${Number(item.number) <= step ? 'bg-[#F26F52]' : 'bg-[#DBD8CC]'}`} />
-            ))}
+      <div className="flex items-center gap-3 sm:gap-5">
+        {step ? (
+          <div className="flex items-center gap-3" data-testid="status-progress">
+            <span className="hidden font-mono text-[10px] font-medium uppercase tracking-[0.16em] text-[#7C7F91] sm:block">{steps[step - 1].label}</span>
+            <div className="flex gap-1.5" aria-label={`Step ${step} of 4`}>
+              {steps.map((item) => (
+                <span key={item.number} className={`h-1.5 w-7 overflow-hidden rounded-full transition-colors duration-300 sm:w-10 ${Number(item.number) <= step ? 'bg-[#F26F52]' : 'bg-[#DBD8CC]'}`} />
+              ))}
+            </div>
+            <span className="font-mono text-[11px] font-medium text-[#F26F52]">{String(step).padStart(2, '0')}/04</span>
           </div>
-          <span className="font-mono text-[11px] font-medium text-[#F26F52]">{String(step).padStart(2, '0')}/04</span>
-        </div>
-      ) : (
-        <div className="hidden items-center gap-2 text-xs font-semibold text-[#7C7F91] sm:flex">
-          <Users size={15} /> made for the group chat
-        </div>
-      )}
+        ) : (
+          <div className="hidden items-center gap-2 text-xs font-semibold text-[#7C7F91] sm:flex">
+            <Users size={15} /> made for the group chat
+          </div>
+        )}
+        <AccountControl />
+      </div>
     </header>
+  );
+}
+
+function AccountControl() {
+  const { isLoaded, isSignedIn, user } = useUser();
+  const { signOut } = useClerk();
+
+  if (!isLoaded) {
+    return <span className="hidden h-9 w-20 animate-pulse rounded-full bg-[#E8E3D2] sm:block" aria-label="Loading account" />;
+  }
+
+  if (isSignedIn) {
+    const displayName = user?.firstName || user?.primaryEmailAddress?.emailAddress?.split('@')[0] || 'friend';
+    return (
+      <div className="flex items-center gap-2 rounded-full border border-[#D9D7D0] bg-[#FFF7E8]/80 py-1 pl-2 pr-1.5">
+        <span className="grid h-7 w-7 place-items-center rounded-full bg-[#B7DBD7] text-[10px] font-bold uppercase text-[#27304C]">
+          {displayName.slice(0, 1)}
+        </span>
+        <span className="hidden max-w-24 truncate text-xs font-bold text-[#27304C] sm:block">{displayName}</span>
+        <button
+          type="button"
+          onClick={() => void signOut({ redirectUrl: basePath || '/' })}
+          className="rounded-full px-2.5 py-1.5 text-[11px] font-bold text-[#6A6E80] transition-colors hover:bg-[#FFD9D3] hover:text-[#A83F31]"
+          data-testid="button-sign-out"
+        >
+          Sign out
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex items-center gap-1.5">
+      <a href={`${basePath}/sign-in`} className="rounded-full px-2.5 py-2 text-xs font-bold text-[#6A6E80] transition-colors hover:text-[#F26F52]" data-testid="link-sign-in">
+        Sign in
+      </a>
+      <a href={`${basePath}/sign-up`} className="rounded-full bg-[#27304C] px-3.5 py-2 text-xs font-bold text-[#FFF7E8] shadow-[2px_2px_0_#F26F52] transition-transform hover:-translate-y-0.5" data-testid="link-sign-up">
+        Join the crew
+      </a>
+    </div>
   );
 }
 
@@ -465,7 +578,57 @@ function NotFoundPage({ goHome }: { goHome: () => void }) {
   return <Shell onHome={goHome}><main className="mx-auto max-w-xl px-5 py-24 text-center"><div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-[#FFD9D3] text-[#F26F52]"><MapPin /></div><h1 className="font-display mt-6 text-4xl font-bold text-[#27304C]">This plan wandered off.</h1><p className="mt-3 text-[#6A6E80]">Let’s get you back to a decision.</p><Button onClick={goHome} testId="button-not-found-home" className="mt-7">Back to PlanJam <ArrowRight size={17} /></Button></main></Shell>;
 }
 
-function Router() {
+function SignInPage() {
+  return (
+    <div className="auth-page app-shell flex min-h-[100dvh] items-center justify-center px-4 py-10">
+      <SignIn routing="path" path={`${basePath}/sign-in`} signUpUrl={`${basePath}/sign-up`} />
+    </div>
+  );
+}
+
+function SignUpPage() {
+  return (
+    <div className="auth-page app-shell flex min-h-[100dvh] items-center justify-center px-4 py-10">
+      <SignUp routing="path" path={`${basePath}/sign-up`} signInUrl={`${basePath}/sign-in`} />
+    </div>
+  );
+}
+
+function PublicHomeRoute() {
+  const { isLoaded, isSignedIn } = useUser();
+  const [, setLocation] = useLocation();
+
+  useEffect(() => {
+    if (isLoaded && isSignedIn) {
+      setLocation('/user-portal');
+    }
+  }, [isLoaded, isSignedIn, setLocation]);
+
+  if (!isLoaded || isSignedIn) {
+    return <div className="app-shell grid min-h-[100dvh] place-items-center"><span className="font-mono text-[10px] uppercase tracking-[.16em] text-[#7C7F91]">loading your crew space</span></div>;
+  }
+
+  return <HomePage start={() => setLocation('/preferences')} />;
+}
+
+function UserPortalRoute() {
+  const { isLoaded, isSignedIn } = useUser();
+  const [, setLocation] = useLocation();
+
+  useEffect(() => {
+    if (isLoaded && !isSignedIn) {
+      setLocation('/');
+    }
+  }, [isLoaded, isSignedIn, setLocation]);
+
+  if (!isLoaded || !isSignedIn) {
+    return <div className="app-shell grid min-h-[100dvh] place-items-center"><span className="font-mono text-[10px] uppercase tracking-[.16em] text-[#7C7F91]">taking you to PlanJam</span></div>;
+  }
+
+  return <HomePage start={() => setLocation('/preferences')} />;
+}
+
+function PlanningRoutes() {
   const [location, setLocation] = useLocation();
   const [prefs, setPrefs] = useState<Preferences>(initialPreferences);
   const [votes, setVotes] = useState<Record<string, Vote>>({});
@@ -477,20 +640,67 @@ function Router() {
   };
   return (
     <>
-      {location === '/' && <HomePage start={() => go('/preferences')} />}
+      {location === '/' && <PublicHomeRoute />}
+      {location === '/user-portal' && <UserPortalRoute />}
       {location === '/preferences' && <PreferencesPage prefs={prefs} setPrefs={setPrefs} next={() => go('/results')} back={() => go('/')} />}
       {location === '/results' && <ResultsPage prefs={prefs} next={() => go('/vote')} back={() => go('/preferences')} />}
       {location === '/vote' && <VotePage votes={votes} setVotes={setVotes} next={() => go('/final')} back={() => go('/results')} />}
       {location === '/final' && <FinalPage votes={votes} restart={restart} />}
-      {!['/', '/preferences', '/results', '/vote', '/final'].includes(location) && <NotFoundPage goHome={() => go('/')} />}
+      {!['/', '/user-portal', '/preferences', '/results', '/vote', '/final'].includes(location) && !location.startsWith('/sign-in') && !location.startsWith('/sign-up') && <NotFoundPage goHome={() => go('/')} />}
     </>
   );
 }
 
+function Router() {
+  return (
+    <Switch>
+      <Route path="/sign-in/*?" component={SignInPage} />
+      <Route path="/sign-up/*?" component={SignUpPage} />
+      <Route component={PlanningRoutes} />
+    </Switch>
+  );
+}
+
+function ClerkProviderWithRoutes() {
+  const [, setLocation] = useLocation();
+
+  return (
+    <ClerkProvider
+      publishableKey={clerkPubKey}
+      proxyUrl={clerkProxyUrl}
+      appearance={clerkAppearance}
+      signInUrl={`${basePath}/sign-in`}
+      signUpUrl={`${basePath}/sign-up`}
+      localization={{
+        signIn: {
+          start: {
+            title: 'Welcome back, planner',
+            subtitle: 'Sign in to keep your crew moving.',
+          },
+        },
+        signUp: {
+          start: {
+            title: 'Join the crew',
+            subtitle: 'Make your next group plan easier.',
+          },
+        },
+      }}
+      routerPush={(to) => setLocation(stripBase(to))}
+      routerReplace={(to) => setLocation(stripBase(to), { replace: true })}
+    >
+      <Router />
+    </ClerkProvider>
+  );
+}
+
+function stripBase(path: string) {
+  return basePath && path.startsWith(basePath) ? path.slice(basePath.length) || '/' : path;
+}
+
 function App() {
   return (
-    <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
-      <Router />
+    <WouterRouter base={basePath}>
+      <ClerkProviderWithRoutes />
     </WouterRouter>
   );
 }

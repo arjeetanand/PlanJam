@@ -24,11 +24,13 @@ PlanJam helps a group of four friends turn competing preferences into one shared
 
 - `artifacts/planjam/src/App.tsx` — the complete local-state planning flow and routes
 - `artifacts/planjam/src/index.css` — PlanJam visual theme, responsive layout, and motion
-- `artifacts/api-server/` — shared API scaffold retained for future server-backed features
+- `artifacts/planjam/public/logo.svg` — branded logo used by the app and Clerk auth screens
+- `artifacts/api-server/` — shared Express API and Clerk proxy middleware
 
 ## Architecture decisions
 
-- The first build is frontend-only and uses local React state because the hackathon flow does not need accounts, persistence, or shared sessions.
+- The planning flow remains local-state and frontend-first because the hackathon demo does not need saved plans or shared sessions.
+- Clerk provides managed authentication with branded sign-in/sign-up routes; the public landing page remains available to signed-out visitors.
 - Wouter routes the five lightweight states so each step can be previewed and revisited without adding a backend.
 - Friend preferences and recommendations are intentionally simulated to keep the core demo fast and self-contained.
 
