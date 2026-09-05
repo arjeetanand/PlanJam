@@ -6,6 +6,7 @@
   "scripts": {
     "hello": "tsx ./src/hello.ts",
     "check:room-selection-privacy": "tsx ./src/check-room-selection-privacy.ts",
+    "check:responsive-ui": "tsx ./src/check-responsive-ui.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "devDependencies": {
