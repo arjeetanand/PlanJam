@@ -1,36 +1,192 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: PlanJam anonymous shared-room API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
-    description: Health operations
+  - name: rooms
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/HealthStatus"
+          content: { application/json: { schema: { $ref: "#/components/schemas/HealthStatus" } } }
+  /rooms:
+    post:
+      operationId: createRoom
+      tags: [rooms]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/RoomInput" } } }
+      responses:
+        "201": { description: Room created, content: { application/json: { schema: { $ref: "#/components/schemas/RoomCreation" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+  /rooms/{slug}/join:
+    post:
+      operationId: joinRoom
+      tags: [rooms]
+      parameters: [ { $ref: "#/components/parameters/Slug" } ]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/ParticipantInput" } } }
+      responses:
+        "200": { description: Joined room, content: { application/json: { schema: { $ref: "#/components/schemas/RoomJoin" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "410": { $ref: "#/components/responses/Expired" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+  /rooms/{slug}/state:
+    get:
+      operationId: getRoomState
+      tags: [rooms]
+      parameters: [ { $ref: "#/components/parameters/Slug" } ]
+      responses:
+        "200": { description: Room state, content: { application/json: { schema: { $ref: "#/components/schemas/RoomState" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "410": { $ref: "#/components/responses/Expired" }
+  /rooms/{slug}/preferences:
+    put:
+      operationId: updateRoomPreferences
+      tags: [rooms]
+      parameters: [ { $ref: "#/components/parameters/Slug" } ]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/PreferenceInput" } } }
+      responses:
+        "200": { description: Preferences saved, content: { application/json: { schema: { $ref: "#/components/schemas/RoomState" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "410": { $ref: "#/components/responses/Expired" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+  /rooms/{slug}/votes:
+    put:
+      operationId: updateRoomVotes
+      tags: [rooms]
+      parameters: [ { $ref: "#/components/parameters/Slug" } ]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/VoteInput" } } }
+      responses:
+        "200": { description: Votes saved, content: { application/json: { schema: { $ref: "#/components/schemas/RoomState" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "410": { $ref: "#/components/responses/Expired" }
+        "429": { $ref: "#/components/responses/RateLimited" }
+  /rooms/{slug}/phase:
+    put:
+      operationId: updateRoomPhase
+      tags: [rooms]
+      parameters: [ { $ref: "#/components/parameters/Slug" } ]
+      requestBody:
+        required: true
+        content: { application/json: { schema: { $ref: "#/components/schemas/PhaseInput" } } }
+      responses:
+        "200": { description: Phase updated, content: { application/json: { schema: { $ref: "#/components/schemas/RoomState" } } } }
+        "400": { $ref: "#/components/responses/BadRequest" }
+        "403": { $ref: "#/components/responses/Forbidden" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Conflict" }
+        "410": { $ref: "#/components/responses/Expired" }
+        "429": { $ref: "#/components/responses/RateLimited" }
 components:
+  parameters:
+    Slug: { name: slug, in: path, required: true, schema: { type: string, pattern: "^[A-Za-z0-9]{8}$" } }
+  responses:
+    BadRequest: { description: Invalid input }
+    Forbidden: { description: Invalid capability }
+    NotFound: { description: Room not found }
+    Conflict: { description: Invalid room state }
+    Expired: { description: Room expired }
+    RateLimited: { description: Too many requests }
   schemas:
     HealthStatus:
       type: object
+      properties: { status: { type: string } }
+      required: [status]
+    RoomInput:
+      type: object
+      required: [name]
+      properties: { name: { type: string, minLength: 1, maxLength: 40 } }
+    ParticipantInput:
+      type: object
+      required: [name]
+      properties: { name: { type: string, minLength: 1, maxLength: 40 } }
+    PreferenceInput:
+      type: object
+      required: [activity, budget, distance, hardNos]
       properties:
-        status:
-          type: string
-      required:
-        - status
-
+        activity: { type: string, enum: [food, movie, games, outdoors, chill, party] }
+        budget: { type: string, enum: ["500", "1000", "1500", "2000-plus"] }
+        distance: { type: string, enum: [nearby, "5km", "10km", anywhere] }
+        hardNos: { type: array, items: { type: string, enum: [crowds, long-drives, loud-venues, spicy-food, late-nights] } }
+    VoteInput:
+      type: object
+      required: [votes]
+      properties:
+        votes: { type: object, additionalProperties: { type: string, enum: [love, works, no] }, minProperties: 1, maxProperties: 3 }
+    PhaseInput:
+      type: object
+      required: [phase]
+      properties: { phase: { type: string, enum: [shortlist, voting, final] } }
+    Participant:
+      type: object
+      required: [id, name, preferencesSubmitted, votesSubmitted]
+      properties: { id: { type: string }, name: { type: string }, preferencesSubmitted: { type: boolean }, votesSubmitted: { type: boolean } }
+    Plan:
+      type: object
+      required: [id, name, detail, category, matchPercent, reasons]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        detail: { type: string }
+        category: { type: string }
+        budget: { type: string }
+        distance: { type: string }
+        matchPercent: { type: number }
+        reasons: { type: array, items: { type: string } }
+    VoteTotal:
+      type: object
+      required: [planId, love, works, no, score]
+      properties: { planId: { type: string }, love: { type: number }, works: { type: number }, no: { type: number }, score: { type: number } }
+    RoomState:
+      type: object
+      required: [slug, phase, expiresAt, participants, shortlist, voteTotals, winner, viewerPreferences, viewerVotes]
+      properties:
+        slug: { type: string }
+        phase: { type: string, enum: [preferences, shortlist, voting, final] }
+        expiresAt: { type: string, format: date-time }
+        participants: { type: array, items: { $ref: "#/components/schemas/Participant" } }
+        shortlist: { type: array, items: { $ref: "#/components/schemas/Plan" } }
+        voteTotals: { type: array, items: { $ref: "#/components/schemas/VoteTotal" } }
+        winner: { type: ["string", "null"] }
+        viewerParticipantId: { type: ["string", "null"] }
+        isHost: { type: ["boolean", "null"] }
+        viewerPreferences: { type: ["object", "null"], properties: { activity: { type: string, enum: [food, movie, games, outdoors, chill, party] }, budget: { type: string, enum: ["500", "1000", "1500", "2000-plus"] }, distance: { type: string, enum: [nearby, "5km", "10km", anywhere] }, hardNos: { type: array, items: { type: string, enum: [crowds, long-drives, loud-venues, spicy-food, late-nights] } } }, required: [activity, budget, distance, hardNos] }
+        viewerVotes: { type: object, additionalProperties: { type: string, enum: [love, works, no] } }
+    RoomCreation:
+      allOf:
+        - $ref: "#/components/schemas/RoomState"
+        - type: object
+          required: [hostToken, participantToken]
+          properties: { hostToken: { type: string }, participantToken: { type: string } }
+    RoomJoin:
+      allOf:
+        - $ref: "#/components/schemas/RoomState"
+        - type: object
+          required: [participantToken]
+          properties: { participantToken: { type: string } }

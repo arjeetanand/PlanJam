@@ -5,7 +5,9 @@
  * PlanJam anonymous shared-room API
  * OpenAPI spec version: 0.1.0
  */
+import type { RoomState } from './roomState';
 
-export interface HealthStatus {
-  status: string;
-}
+export type RoomCreation = RoomState & {
+  hostToken: string;
+  participantToken: string;
+};

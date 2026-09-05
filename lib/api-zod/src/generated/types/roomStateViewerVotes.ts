@@ -6,6 +6,4 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface HealthStatus {
-  status: string;
-}
+export type RoomStateViewerVotes = {[key: string]: 'love' | 'works' | 'no'};
