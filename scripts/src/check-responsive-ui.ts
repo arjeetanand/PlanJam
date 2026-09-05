@@ -359,7 +359,7 @@ async function main(): Promise<void> {
     await page.click('[data-testid="button-copy-link"]');
     await page.waitFor('[data-testid="status-copy-link"]');
     const copyStatus = await page.run<string>(() => document.querySelector('[data-testid="status-copy-link"]')?.textContent ?? "");
-    assert(copyStatus.includes("Link copied") || copyStatus.includes("Copy failed"), `copy-link feedback was not rendered: ${copyStatus}`);
+    assert(copyStatus.includes("Link copied") || copyStatus.includes("Link selected") || copyStatus.includes("Copy failed"), `copy-link feedback was not rendered: ${copyStatus}`);
     console.log("PASS copy-link feedback state");
 
     await setRoomTokens(page, shortlistRoom);
