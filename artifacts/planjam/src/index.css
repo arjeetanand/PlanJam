@@ -77,6 +77,11 @@ body {
 }
 button, a { -webkit-tap-highlight-color: transparent; }
 button { font: inherit; }
+button:focus-visible, a:focus-visible {
+  outline: 3px solid #F26F52;
+  outline-offset: 3px;
+}
+button:disabled { pointer-events: none; }
 
 .font-display { font-family: 'Space Grotesk', sans-serif; }
 .font-mono { font-family: var(--app-font-mono); }
@@ -107,4 +112,5 @@ button { font: inherit; }
 @keyframes confetti-fall { 0% { opacity: 0; transform: translateY(-30px) rotate(0) scale(.7); } 12% { opacity: 1; } 100% { opacity: 0; transform: translateY(330px) rotate(480deg) scale(1); } }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; }
+  .floaty { transform: none !important; }
 }
