@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import { useJoinRoom, type RoomState, getGetRoomStateQueryKey } from '@workspace/api-client-react';
 import { saveTokens, getAuthHeaders } from '@/lib/storage';
 import { queryClient } from '@/lib/query-client';
@@ -12,14 +12,14 @@ export function JoinRoom({ room }: { room: RoomState }) {
   const { isSignedIn, user } = useAppAuth();
   const joinRoom = useJoinRoom({ request: { headers: getAuthHeaders(room.slug) } });
 
-  const handleJoin = (e: React.FormEvent) => {
+  const handleJoin = (e: FormEvent) => {
     e.preventDefault();
     const finalName = name.trim() || (isSignedIn && user?.firstName ? user.firstName : 'Friend');
     joinRoom.mutate({ slug: room.slug, data: { name: finalName } }, {
       onSuccess: (data) => {
         saveTokens(room.slug, data.participantToken, undefined);
         queryClient.invalidateQueries({ queryKey: getGetRoomStateQueryKey(room.slug) });
-      }
+      },
     });
   };
 
@@ -29,8 +29,8 @@ export function JoinRoom({ room }: { room: RoomState }) {
 
   return (
     <Shell>
-      <main className="page-in mx-auto flex w-full max-w-lg flex-1 flex-col justify-center px-5 py-12 sm:px-8">
-        <div className="mb-8 rounded-3xl border-2 border-[#27304C] bg-[#FFF7E8] p-6 shadow-[8px_8px_0_#27304C] sm:p-8">
+      <main className="safe-page page-in mx-auto flex w-full max-w-lg flex-1 flex-col justify-center py-8 sm:py-12">
+        <div className="ink-card mb-8 rounded-3xl bg-[#FFF7E8] p-5 sm:p-8">
           <div className="mb-2 flex items-center gap-2 font-mono text-[10px] uppercase tracking-[.16em] text-[#F26F52]">
             <span className="h-1.5 w-1.5 rounded-full bg-[#F26F52]" />
             You're invited
@@ -41,11 +41,11 @@ export function JoinRoom({ room }: { room: RoomState }) {
           
           <div className="my-6 flex flex-wrap gap-4 text-sm font-semibold text-[#6A6E80]">
             <span className="flex items-center gap-1.5 rounded-full border border-[#D9D7D0] bg-[#FFFDF5] px-3 py-1.5">
-              <Users size={16} className="text-[#37A28C]" /> {room.participants.length}/{room.capacity} joined
+               <Users size={16} className="text-[#37A28C]" /> <span data-testid="room-join-capacity">{room.participants.length}/{room.capacity} joined</span>
             </span>
             {room.participants.length > 0 && (
               <span className="flex items-center gap-1.5 rounded-full border border-[#D9D7D0] bg-[#FFFDF5] px-3 py-1.5">
-                Host: <strong className="text-[#27304C]">{room.participants[0].name}</strong>
+                 Host: <strong className="text-[#27304C]" data-testid="text-room-host">{room.participants[0].name}</strong>
               </span>
             )}
           </div>
@@ -76,7 +76,7 @@ export function JoinRoom({ room }: { room: RoomState }) {
           )}
 
           {joinRoom.isError && (
-            <p className="mt-4 text-center text-xs font-bold text-[#A83F31]">
+            <p className="mt-4 rounded-xl border border-[#F1B1A6] bg-[#FFD9D3]/70 px-3 py-2 text-center text-xs font-bold text-[#A83F31]" role="alert" data-testid="status-join-error">
               {(joinRoom.error as any)?.response?.data?.error || 'Failed to join.'}
             </p>
           )}

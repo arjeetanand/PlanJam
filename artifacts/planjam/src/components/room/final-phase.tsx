@@ -27,7 +27,7 @@ export function FinalPhase({ room }: { room: RoomState }) {
   
   return (
     <Shell step={4}>
-      <main className="page-in mx-auto max-w-3xl px-5 pb-20 pt-8 sm:px-8 sm:pt-12">
+      <main className="safe-page page-in mx-auto max-w-3xl pb-16 pt-6 sm:pb-20 sm:pt-12">
         {/* Simple CSS Confetti Fallback */}
         <div className="pointer-events-none fixed inset-0 overflow-hidden" aria-hidden="true">
           {Array.from({ length: 20 }).map((_, i) => (
@@ -47,7 +47,7 @@ export function FinalPhase({ room }: { room: RoomState }) {
         </div>
 
         {winnerPlan ? (
-          <div className="rise-in mx-auto max-w-lg overflow-hidden rounded-[32px] border-2 border-[#27304C] bg-[#FFFDF5] shadow-[12px_12px_0_#F26F52]">
+           <div className="rise-in mx-auto max-w-lg overflow-hidden rounded-[28px] border-2 border-[#27304C] bg-[#FFFDF5] shadow-[8px_8px_0_#F26F52] sm:rounded-[32px] sm:shadow-[12px_12px_0_#F26F52]">
             <div className={`p-8 text-center ${PLAN_COLORS[winnerPlan.category] || 'bg-[#FFE48B]'} border-b-2 border-[#27304C]`}>
               <div className="mx-auto mb-4 grid h-20 w-20 place-items-center rounded-2xl bg-[#27304C] text-[#FFF7E8] shadow-[4px_4px_0_#FFF7E8]">
                 {(() => {
@@ -55,13 +55,13 @@ export function FinalPhase({ room }: { room: RoomState }) {
                   return <Icon size={36} />;
                 })()}
               </div>
-              <h2 className="font-display text-3xl font-bold tracking-[-.04em] text-[#27304C]">
+              <h2 className="font-display text-3xl font-bold tracking-[-.04em] text-[#27304C]" data-testid="text-winning-plan">
                 {winnerPlan.name}
               </h2>
               <p className="mt-2 text-sm font-semibold text-[#5D5121] opacity-80">{winnerPlan.detail}</p>
             </div>
             
-            <div className="p-8">
+             <div className="p-5 sm:p-8">
               {winnerPlan.venue && (
                 <div className="mb-7 rounded-2xl border border-[#D9D7D0] bg-[#F0EDE1] p-4 text-sm text-[#5E6377]">
                   <p className="flex items-start gap-2"><MapPin size={17} className="mt-0.5 shrink-0 text-[#F26F52]" /> {winnerPlan.venue.address}</p>
@@ -70,7 +70,7 @@ export function FinalPhase({ room }: { room: RoomState }) {
                     {winnerPlan.venue.rating !== undefined && <span className="flex items-center gap-1"><Star size={13} fill="#F4B942" className="text-[#F4B942]" /> {winnerPlan.venue.rating.toFixed(1)}</span>}
                     {winnerPlan.venue.openNow !== undefined && <span className="flex items-center gap-1"><Clock3 size={13} /> {winnerPlan.venue.openNow ? 'Open now' : 'Closed now'}</span>}
                   </div>
-                  <a href={winnerPlan.venue.mapsUrl} target="_blank" rel="noopener noreferrer" className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-full bg-[#27304C] px-4 py-3 font-bold text-[#FFF7E8]">
+                   <a href={winnerPlan.venue.mapsUrl} target="_blank" rel="noopener noreferrer" className="mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-full bg-[#27304C] px-4 py-3 font-bold text-[#FFF7E8]" data-testid="link-winner-directions">
                     <Navigation size={16} /> Open directions
                   </a>
                 </div>
@@ -84,7 +84,7 @@ export function FinalPhase({ room }: { room: RoomState }) {
                   const isWinner = vt.planId === room.winner;
                   
                   return (
-                    <div key={vt.planId} className={`rounded-xl border p-4 ${isWinner ? 'border-[#27304C] bg-[#FFF7E8]' : 'border-[#D9D7D0] bg-transparent'}`}>
+                     <div key={vt.planId} className={`rounded-xl border p-4 ${isWinner ? 'border-[#27304C] bg-[#FFF7E8]' : 'border-[#D9D7D0] bg-transparent'}`} data-testid={`score-plan-${vt.planId}`}>
                       <div className="mb-3 flex items-center justify-between">
                         <span className="font-bold text-[#27304C]">{plan.name}</span>
                         <span className="rounded-full bg-[#E8E3D2] px-2 py-0.5 font-mono text-[10px] font-bold">{vt.score} pts</span>
@@ -105,7 +105,7 @@ export function FinalPhase({ room }: { room: RoomState }) {
             </div>
           </div>
         ) : (
-          <div className="text-center p-10 text-[#6A6E80]">Winner not found</div>
+          <div className="p-10 text-center text-[#6A6E80]" role="status" data-testid="status-winner-not-found">Winner not found</div>
         )}
       </main>
     </Shell>

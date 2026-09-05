@@ -29,6 +29,7 @@ export function PreferencesPhase({ room }: { room: RoomState }) {
     distance: room.viewerPreferences?.distance || 'nearby',
     hardNos: room.viewerPreferences?.hardNos || [],
   });
+  const [saveFeedback, setSaveFeedback] = useState<'idle' | 'saved' | 'error'>('idle');
 
   const serverPrefsStr = JSON.stringify(room.viewerPreferences);
   useEffect(() => {
@@ -38,10 +39,13 @@ export function PreferencesPhase({ room }: { room: RoomState }) {
   }, [serverPrefsStr]);
   
   const handleSave = () => {
+    setSaveFeedback('idle');
     updatePrefs.mutate({ slug: room.slug, data: prefs }, {
       onSuccess: (data) => {
         queryClient.setQueryData(getGetRoomStateQueryKey(room.slug), (old: any) => mergeRoomState(old, data));
-      }
+        setSaveFeedback('saved');
+      },
+      onError: () => setSaveFeedback('error'),
     });
   };
 
@@ -49,7 +53,7 @@ export function PreferencesPhase({ room }: { room: RoomState }) {
     updatePhase.mutate({ slug: room.slug, data: { phase: 'shortlist' } }, {
       onSuccess: (data) => {
         queryClient.setQueryData(getGetRoomStateQueryKey(room.slug), (old: any) => mergeRoomState(old, data));
-      }
+      },
     });
   };
 
@@ -68,7 +72,7 @@ export function PreferencesPhase({ room }: { room: RoomState }) {
 
   return (
     <Shell step={1}>
-      <main className="page-in mx-auto grid max-w-6xl gap-10 px-5 pb-20 pt-8 sm:px-8 sm:pt-12 lg:grid-cols-[1fr_340px]">
+      <main className="safe-page page-in mx-auto grid max-w-6xl gap-8 pb-16 pt-6 sm:gap-10 sm:pb-20 sm:pt-12 lg:grid-cols-[minmax(0,1fr)_340px]">
         <div>
           <div className="mb-8 flex items-end justify-between gap-4">
             <SectionTitle 
@@ -82,11 +86,11 @@ export function PreferencesPhase({ room }: { room: RoomState }) {
             <h2 className="font-display text-xl font-bold tracking-[-.04em] text-[#27304C]">Choose a starting point</h2>
             <span className="font-mono text-[10px] uppercase tracking-[.12em] text-[#8A8D9B]"><Check size={13} className="mr-1 inline text-[#37A28C]" /> required</span>
           </div>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-3">
             {activityOptions.map(({ label, value, sub, icon: Icon, tint }) => {
               const selected = prefs.activity === value;
-              return (
-                <button type="button" aria-pressed={selected} key={value} onClick={() => setPrefs({ ...prefs, activity: value })} data-testid={`option-activity-${value}`} className={`group relative min-h-[130px] rounded-2xl border-2 p-4 text-left transition-all duration-200 ${selected ? 'border-[#27304C] bg-[#FFF7E8] shadow-[4px_4px_0_#27304C] -translate-y-1' : 'border-[#D9D7D0] bg-[#FFF7E8]/70 hover:-translate-y-0.5 hover:border-[#A8A8B1]'}`}>
+                return (
+                <button type="button" aria-pressed={selected} key={value} onClick={() => setPrefs({ ...prefs, activity: value })} data-testid={`option-activity-${value}`} className={`group relative min-h-[124px] rounded-2xl border-2 p-3 text-left transition-all duration-200 sm:min-h-[130px] sm:p-4 ${selected ? 'border-[#27304C] bg-[#FFF7E8] shadow-[4px_4px_0_#27304C] -translate-y-1' : 'border-[#D9D7D0] bg-[#FFF7E8]/70 hover:-translate-y-0.5 hover:border-[#A8A8B1]'}`}>
                   <span className={`mb-6 grid h-10 w-10 place-items-center rounded-xl ${tint} text-[#27304C] transition-transform group-hover:rotate-[-5deg]`}><Icon size={20} /></span>
                   <strong className="block text-sm text-[#27304C]">{label}</strong><span className="mt-0.5 block text-xs text-[#828596]">{sub}</span>
                   {selected && <span className="absolute right-3 top-3 grid h-5 w-5 place-items-center rounded-full bg-[#27304C] text-[#FFF7E8]"><Check size={12} strokeWidth={3} /></span>}
@@ -95,7 +99,7 @@ export function PreferencesPhase({ room }: { room: RoomState }) {
             })}
           </div>
 
-          <div className="mt-10 grid gap-8 sm:grid-cols-2">
+          <div className="mt-10 grid gap-7 sm:grid-cols-2 sm:gap-8">
             <div>
               <h2 className="mb-1 flex items-center gap-2 font-display text-xl font-bold tracking-[-.04em]"><WalletCards size={19} className="text-[#F26F52]" /> budget per person</h2>
               <div className="mt-4 grid grid-cols-2 gap-2">
@@ -122,16 +126,17 @@ export function PreferencesPhase({ room }: { room: RoomState }) {
             </div>
           </div>
 
-          <div className="mt-12 flex items-center justify-between border-t border-[#D9D7D0] pt-6">
+          <div className="mt-12 flex flex-col items-stretch gap-3 border-t border-[#D9D7D0] pt-6 min-[420px]:flex-row min-[420px]:items-center min-[420px]:justify-between">
             <Button onClick={handleSave} disabled={updatePrefs.isPending} testId="button-save-preferences">
-              {viewer?.preferencesSubmitted ? 'Update Preferences' : 'Lock in choices'}
+              {updatePrefs.isPending ? 'Saving…' : viewer?.preferencesSubmitted ? 'Update Preferences' : 'Lock in choices'}
             </Button>
-            {viewer?.preferencesSubmitted && <span className="flex items-center gap-1.5 text-sm font-bold text-[#37A28C]"><CheckCircle2 size={16} /> Saved</span>}
+            {(viewer?.preferencesSubmitted || saveFeedback === 'saved') && <span className="flex items-center gap-1.5 text-sm font-bold text-[#37A28C]" aria-live="polite" data-testid="status-preferences-saved"><CheckCircle2 size={16} /> Saved</span>}
+            {saveFeedback === 'error' && <span className="text-sm font-bold text-[#A83F31]" role="alert" data-testid="status-preferences-error">Couldn’t save. Try again.</span>}
           </div>
         </div>
 
         <aside className="space-y-6">
-          <div className="rounded-2xl border border-[#D9D7D0] bg-[#FFFDF5] p-4">
+           <div className="rounded-2xl border border-[#D9D7D0] bg-[#FFFDF5] p-4" data-testid="status-suggestion-source">
             <p className="flex items-center gap-2 text-sm font-bold text-[#27304C]"><MapPin size={16} className="text-[#F26F52]" /> Suggestion source</p>
             <p className="mt-1 text-xs leading-5 text-[#717589]">
               {room.venueStatus === 'nearby-ready'
@@ -142,7 +147,7 @@ export function PreferencesPhase({ room }: { room: RoomState }) {
           <RoomShare slug={room.slug} participantCount={room.participants.length} capacity={room.capacity} />
            <Roster participants={room.participants} capacity={room.capacity} />
           
-          <div className="rounded-3xl border-2 border-[#27304C] bg-[#27304C] p-5 text-[#FFF7E8] shadow-[6px_6px_0_#F26F52]">
+           <div className="rounded-3xl border-2 border-[#27304C] bg-[#27304C] p-5 text-[#FFF7E8] shadow-[6px_6px_0_#F26F52]" data-testid="status-next-steps">
             <h3 className="mb-2 font-display text-lg font-bold text-[#FFF7E8]">Next Steps</h3>
             {isHost ? (
               <>
@@ -157,6 +162,7 @@ export function PreferencesPhase({ room }: { room: RoomState }) {
                   Generate Shortlist <ArrowRight size={16} />
                 </Button>
                 {!everyoneReady && <p className="mt-3 text-center text-[11px] font-mono text-[#F26F52]">waiting for {Math.max(2, room.participants.length)} readys</p>}
+                 {updatePhase.isError && <p className="mt-3 text-center text-xs font-bold text-[#FFB59F]" role="alert" data-testid="status-shortlist-error">Couldn’t generate the shortlist. Try again.</p>}
               </>
             ) : (
               <p className="text-sm text-[#B8BBC8]">

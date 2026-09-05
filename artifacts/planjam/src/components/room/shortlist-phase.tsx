@@ -46,15 +46,15 @@ export function ShortlistPhase({ room }: { room: RoomState }) {
 
   return (
     <Shell step={2}>
-      <main className="page-in mx-auto max-w-5xl px-5 pb-20 pt-8 sm:px-8 sm:pt-12">
-        <div className="grid gap-10 lg:grid-cols-[.72fr_1.28fr] lg:items-start">
+      <main className="safe-page page-in mx-auto max-w-5xl pb-16 pt-6 sm:pb-20 sm:pt-12">
+        <div className="grid gap-8 lg:grid-cols-[minmax(250px,.72fr)_minmax(0,1.28fr)] lg:gap-10 lg:items-start">
           <section>
             <SectionTitle 
               eyebrow="02 / group sync" 
               title="Look at that overlap." 
                body="We weighted the group’s strongest signals, kept minority picks in the mix, and protected every hard no." 
             />
-            <div className="rounded-3xl border-2 border-[#27304C] bg-[#27304C] p-5 text-[#FFF7E8] shadow-[6px_6px_0_#F26F52]">
+            <div className="rounded-3xl border-2 border-[#27304C] bg-[#27304C] p-4 text-[#FFF7E8] shadow-[6px_6px_0_#F26F52] sm:p-5">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="font-mono text-[10px] uppercase tracking-[.16em] text-[#B7DBD7]">the overlap</p>
@@ -82,6 +82,7 @@ export function ShortlistPhase({ room }: { room: RoomState }) {
                 >
                   Open Voting <ArrowRight size={16} />
                 </Button>
+                {updatePhase.isError && <p className="mt-3 text-xs font-bold text-[#A83F31]" role="alert" data-testid="status-voting-error">Couldn’t open voting. Try again.</p>}
               </div>
             ) : (
               <div className="mt-8 rounded-2xl border border-[#D9D7D0] bg-[#FFF7E8]/80 p-5 text-center">
@@ -93,7 +94,7 @@ export function ShortlistPhase({ room }: { room: RoomState }) {
           </section>
 
           <section>
-            <div className="mb-4 flex items-end justify-between">
+              <div className="mb-4 flex items-end justify-between gap-3">
               <div>
                 <p className="font-mono text-[10px] uppercase tracking-[.16em] text-[#F26F52]">the shortlist</p>
                 <h2 className="font-display mt-1 text-2xl font-bold tracking-[-.05em] text-[#27304C]">Three ways to make it happen</h2>
@@ -118,7 +119,7 @@ export function ShortlistPhase({ room }: { room: RoomState }) {
                 const colorClass = PLAN_COLORS[plan.category] || 'bg-[#D9D7D0]';
                 
                 return (
-                  <article key={plan.id} data-testid={`card-plan-${plan.id}`} className="group rounded-2xl border border-[#D9D7D0] bg-[#FFF7E8]/85 p-4 transition-all duration-200 hover:-translate-y-1 hover:border-[#27304C] hover:shadow-[4px_4px_0_#27304C] sm:p-5">
+                  <article key={plan.id} data-testid={`card-plan-${plan.id}`} className="group rounded-2xl border border-[#D9D7D0] bg-[#FFF7E8]/85 p-3.5 transition-all duration-200 hover:-translate-y-1 hover:border-[#27304C] hover:shadow-[4px_4px_0_#27304C] sm:p-5">
                     <div className="flex gap-3 sm:gap-4">
                       <div className="flex shrink-0 flex-col items-center gap-2">
                         <span className={`grid h-14 w-14 place-items-center rounded-2xl ${colorClass} text-[#27304C]`}>
@@ -129,12 +130,12 @@ export function ShortlistPhase({ room }: { room: RoomState }) {
                         </span>
                       </div>
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
+                         <div className="flex min-w-0 flex-wrap items-start justify-between gap-2">
+                           <div className="min-w-0">
                             <h3 className="font-display text-xl font-bold tracking-[-.045em] text-[#27304C]">{plan.name}</h3>
                             <p className="mt-0.5 text-sm text-[#74788A]">{plan.detail}</p>
                           </div>
-                          <span className="shrink-0 rounded-full bg-[#DBF1E6] px-2.5 py-1 font-mono text-[11px] font-medium text-[#277865]">{plan.matchPercent}% match</span>
+                           <span className="shrink-0 rounded-full bg-[#DBF1E6] px-2 py-1 font-mono text-[10px] font-medium text-[#277865] sm:px-2.5 sm:text-[11px]">{plan.matchPercent}% match</span>
                         </div>
                         <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-[#E4E0D3]" aria-label={`${plan.matchPercent}% match`}>
                           <div className={`h-full rounded-full ${index === 0 ? 'bg-[#F26F52]' : 'bg-[#37A28C]'}`} style={{ width: `${plan.matchPercent}%` }} />
@@ -146,12 +147,12 @@ export function ShortlistPhase({ room }: { room: RoomState }) {
                         </div>
                          {plan.venue && (
                            <div className="mt-4 rounded-xl bg-[#F0EDE1] p-3 text-xs text-[#5E6377]">
-                             <p className="flex items-start gap-1.5"><MapPin size={14} className="mt-0.5 shrink-0 text-[#F26F52]" /> {plan.venue.address}</p>
+                              <p className="flex items-start gap-1.5"><MapPin size={14} className="mt-0.5 shrink-0 text-[#F26F52]" /> <span data-testid={`text-venue-address-${plan.id}`}>{plan.venue.address}</span></p>
                              <div className="mt-2 flex flex-wrap items-center gap-3">
                                <span>{plan.venue.distanceMeters < 1000 ? `${plan.venue.distanceMeters} m` : `${(plan.venue.distanceMeters / 1000).toFixed(1)} km`} away</span>
                                {plan.venue.rating !== undefined && <span className="flex items-center gap-1"><Star size={13} fill="#F4B942" className="text-[#F4B942]" /> {plan.venue.rating.toFixed(1)}</span>}
                                {plan.venue.openNow !== undefined && <span className="flex items-center gap-1"><Clock3 size={13} /> {plan.venue.openNow ? 'Open now' : 'Closed now'}</span>}
-                               <a href={plan.venue.mapsUrl} target="_blank" rel="noopener noreferrer" className="ml-auto inline-flex items-center gap-1 font-bold text-[#277865] hover:underline">Maps <ExternalLink size={12} /></a>
+                                <a href={plan.venue.mapsUrl} target="_blank" rel="noopener noreferrer" className="ml-auto inline-flex min-h-11 items-center gap-1 font-bold text-[#277865] hover:underline" data-testid={`link-plan-map-${plan.id}`}>Maps <ExternalLink size={12} /></a>
                              </div>
                            </div>
                          )}

@@ -38,6 +38,7 @@ export function VotingPhase({ room }: { room: RoomState }) {
   const updatePhase = useUpdateRoomPhase({ request: { headers } });
 
   const [votes, setVotes] = useState<Record<string, 'love' | 'works' | 'no'>>(room.viewerVotes || {});
+  const [voteError, setVoteError] = useState(false);
 
   const serverVotesStr = JSON.stringify(room.viewerVotes);
   
@@ -50,11 +51,13 @@ export function VotingPhase({ room }: { room: RoomState }) {
   const handleVote = (planId: string, value: 'love' | 'works' | 'no') => {
     const newVotes = { ...votes, [planId]: value };
     setVotes(newVotes);
+    setVoteError(false);
     
     // Auto-save if all plans are voted on
     if (Object.keys(newVotes).length === room.shortlist.length) {
       updateVotes.mutate({ slug: room.slug, data: { votes: newVotes } }, {
-        onSuccess: (data) => queryClient.setQueryData(getGetRoomStateQueryKey(room.slug), (old: any) => mergeRoomState(old, data))
+        onSuccess: (data) => queryClient.setQueryData(getGetRoomStateQueryKey(room.slug), (old: any) => mergeRoomState(old, data)),
+        onError: () => setVoteError(true),
       });
     }
   };
@@ -78,7 +81,7 @@ export function VotingPhase({ room }: { room: RoomState }) {
 
   return (
     <Shell step={3}>
-      <main className="page-in mx-auto max-w-4xl px-5 pb-20 pt-8 sm:px-8 sm:pt-12">
+      <main className="safe-page page-in mx-auto max-w-4xl pb-16 pt-6 sm:pb-20 sm:pt-12">
         <div className="mb-8 flex items-end justify-between gap-4">
           <SectionTitle 
             eyebrow="03 / the vote" 
@@ -90,7 +93,7 @@ export function VotingPhase({ room }: { room: RoomState }) {
           </span>
         </div>
 
-        <div className="grid gap-12 lg:grid-cols-[1fr_300px] lg:items-start">
+        <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_300px] lg:gap-12 lg:items-start">
           <div className="space-y-6">
             {room.shortlist.map((plan) => {
               const Icon = PLAN_ICONS[plan.category] || Utensils;
@@ -98,7 +101,7 @@ export function VotingPhase({ room }: { room: RoomState }) {
               const myVote = votes[plan.id];
 
               return (
-                <article key={plan.id} data-testid={`vote-plan-${plan.id}`} className="rounded-2xl border-2 border-[#D9D7D0] bg-[#FFFDF5] p-5 shadow-sm transition-colors hover:border-[#A8A8B1]">
+                <article key={plan.id} data-testid={`vote-plan-${plan.id}`} className="rounded-2xl border-2 border-[#D9D7D0] bg-[#FFFDF5] p-4 shadow-sm transition-colors hover:border-[#A8A8B1] sm:p-5">
                   <div className="mb-5 flex items-start gap-4">
                     <span className={`grid h-12 w-12 shrink-0 place-items-center rounded-xl ${colorClass} text-[#27304C]`}>
                       <Icon size={22} />
@@ -110,8 +113,8 @@ export function VotingPhase({ room }: { room: RoomState }) {
                   </div>
                      {plan.venue && (
                        <div className="mb-4 flex items-start justify-between gap-3 rounded-xl bg-[#F0EDE1] p-3 text-xs text-[#5E6377]">
-                         <span className="flex items-start gap-1.5"><MapPin size={14} className="mt-0.5 shrink-0 text-[#F26F52]" /> {plan.venue.address} · {plan.venue.distanceMeters < 1000 ? `${plan.venue.distanceMeters} m` : `${(plan.venue.distanceMeters / 1000).toFixed(1)} km`}</span>
-                         <a href={plan.venue.mapsUrl} target="_blank" rel="noopener noreferrer" className="inline-flex shrink-0 items-center gap-1 font-bold text-[#277865]">Maps <ExternalLink size={12} /></a>
+                          <span className="min-w-0 flex items-start gap-1.5"><MapPin size={14} className="mt-0.5 shrink-0 text-[#F26F52]" /> <span className="min-w-0 break-words">{plan.venue.address} · {plan.venue.distanceMeters < 1000 ? `${plan.venue.distanceMeters} m` : `${(plan.venue.distanceMeters / 1000).toFixed(1)} km`}</span></span>
+                          <a href={plan.venue.mapsUrl} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-11 shrink-0 items-center gap-1 font-bold text-[#277865]" data-testid={`link-vote-map-${plan.id}`}>Maps <ExternalLink size={12} /></a>
                        </div>
                      )}
                   <div className="grid grid-cols-3 gap-2">
@@ -119,8 +122,11 @@ export function VotingPhase({ room }: { room: RoomState }) {
                       const selected = myVote === value;
                       return (
                         <button
-                          key={value}
+                           key={value}
+                           type="button"
                           onClick={() => handleVote(plan.id, value)}
+                           disabled={updateVotes.isPending}
+                           aria-pressed={selected}
                           data-testid={`vote-${value}-${plan.id}`}
                           className={`flex flex-col items-center justify-center gap-1.5 rounded-xl border-2 py-3 transition-all ${
                             selected 
@@ -159,6 +165,7 @@ export function VotingPhase({ room }: { room: RoomState }) {
                     Show Result <ArrowRight size={16} />
                   </Button>
                   {!allVoted && <p className="mt-3 text-center text-[11px] font-mono text-[#F26F52]">waiting for votes</p>}
+                   {updatePhase.isError && <p className="mt-3 text-center text-xs font-bold text-[#FFB59F]" role="alert" data-testid="status-results-error">Couldn’t reveal the result. Try again.</p>}
                 </>
               ) : (
                 <p className="text-sm text-[#B8BBC8]">
@@ -168,6 +175,7 @@ export function VotingPhase({ room }: { room: RoomState }) {
                 </p>
               )}
             </div>
+            {voteError && <p className="rounded-xl border border-[#F1B1A6] bg-[#FFD9D3]/70 px-3 py-2 text-xs font-bold text-[#A83F31]" role="alert" data-testid="status-vote-error">Votes didn’t save. Try rating the last option again.</p>}
           </aside>
         </div>
       </main>

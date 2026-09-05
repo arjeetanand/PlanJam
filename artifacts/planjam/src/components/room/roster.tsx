@@ -9,7 +9,7 @@ export function Roster({ participants, capacity }: { participants: Participant[]
   const waitingCount = participants.length - readyCount;
 
   return (
-    <div className="rounded-3xl border border-[#D9D7D0] bg-[#FFF7E8]/80 p-5">
+    <div className="rounded-3xl border border-[#D9D7D0] bg-[#FFF7E8]/80 p-4 sm:p-5">
       <div className="mb-4 flex items-center justify-between gap-3">
         <h3 className="font-mono text-[10px] font-bold uppercase tracking-[.14em] text-[#8A8D9B]">The Crew</h3>
         <span className="font-mono text-[10px] font-bold uppercase tracking-[.12em] text-[#6A6E80]">{participants.length}/{capacity}</span>
@@ -28,12 +28,12 @@ export function Roster({ participants, capacity }: { participants: Participant[]
           {waitingCount > 0 ? `${waitingCount} waiting` : 'Everyone ready'}
         </span>
       </div>
-      <div className="grid gap-2 sm:grid-cols-2">
+      <div className="grid gap-2 sm:grid-cols-2" data-testid="roster-list">
         {participants.map((p, index) => {
           const isCreator = index === 0;
           const isExpanded = expandedParticipantId === p.id && !!p.selection;
           return (
-            <div key={p.id} className="min-w-0 rounded-xl border border-[#D9D7D0] bg-[#FFFDF5] p-3 shadow-sm">
+            <div key={p.id} className="min-w-0 rounded-xl border border-[#D9D7D0] bg-[#FFFDF5] p-3 shadow-sm" data-testid={`roster-member-${p.id}`}>
               <button
                 type="button"
                 disabled={!p.selection}

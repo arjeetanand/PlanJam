@@ -4,7 +4,7 @@ import { ArrowRight, Clock3, Crown, Sparkles, CheckCircle2, Heart, Flame, Users,
 import { useCreateRoom } from '@workspace/api-client-react';
 import { saveTokens } from '@/lib/storage';
 import { useLocation } from 'wouter';
-import { useState } from 'react';
+import { useState, type FormEvent } from 'react';
 import { useAppAuth } from '@/lib/auth';
 
 export function HomePage() {
@@ -15,14 +15,14 @@ export function HomePage() {
   const [roomLocation, setRoomLocation] = useState<{ latitude: number; longitude: number; accuracy: number }>();
   const { isSignedIn, user } = useAppAuth();
 
-  const handleStart = (e: React.FormEvent) => {
+  const handleStart = (e: FormEvent) => {
     e.preventDefault();
     const finalName = name.trim() || (isSignedIn && user?.firstName ? user.firstName : 'Host');
     createRoom.mutate({ data: { name: finalName, ...(roomLocation ? { location: roomLocation } : {}) } }, {
       onSuccess: (data) => {
         saveTokens(data.slug, data.participantToken, data.hostToken);
         setLocation(`/room/${data.slug}`);
-      }
+      },
     });
   };
 
@@ -52,7 +52,7 @@ export function HomePage() {
 
   return (
     <Shell>
-      <main className="page-in mx-auto grid w-full max-w-6xl gap-12 px-5 pb-16 pt-8 sm:px-8 lg:grid-cols-[.9fr_1.1fr] lg:items-center lg:gap-16 lg:pt-16">
+      <main className="safe-page page-in mx-auto grid w-full max-w-6xl gap-10 pb-14 pt-6 sm:gap-12 sm:pb-20 sm:pt-10 lg:grid-cols-[.9fr_1.1fr] lg:items-center lg:gap-16 lg:pt-16">
         <section>
           <div className="mb-6 inline-flex rotate-[-2deg] items-center gap-2 rounded-full border border-[#D6CDAA] bg-[#FFF1A9] px-3.5 py-2 text-xs font-bold text-[#5D5121] shadow-[3px_3px_0_#D6CDAA]">
             <Sparkles size={15} /> the group chat, but useful
@@ -66,13 +66,15 @@ export function HomePage() {
             </span>
             <span className="mt-2 block">One plan.</span>
           </h1>
-          <p className="mt-9 max-w-md text-lg leading-7 text-[#5E6377]">
+          <p className="mt-8 max-w-md text-base leading-7 text-[#5E6377] sm:mt-9 sm:text-lg">
             PlanJam turns scattered “I’m easy”s into a real decision. Everyone picks, the overlap appears, and the crew votes one good plan into existence.
           </p>
           
           <form onSubmit={handleStart} className="mt-9 flex flex-col gap-4">
             <div className="flex w-full max-w-md flex-col gap-2 sm:flex-row sm:items-center">
+              <label htmlFor="host-name" className="sr-only">Your name</label>
               <input 
+                id="host-name"
                 type="text" 
                 placeholder="Your name" 
                 value={name}
@@ -97,12 +99,13 @@ export function HomePage() {
                     </button>
                     <button type="button" onClick={() => { setRoomLocation(undefined); setLocationState('skipped'); }} className="px-2 py-2 text-xs font-bold text-[#6A6E80]" data-testid="button-skip-location">Skip</button>
                   </div>
-                  {locationState === 'ready' && <p className="mt-2 flex items-center gap-1 text-xs font-semibold text-[#277865]"><ShieldCheck size={13} /> Ready for nearby suggestions</p>}
-                  {locationState === 'unavailable' && <p className="mt-2 text-xs text-[#A83F31]">Location wasn’t available. You can still start with curated ideas.</p>}
-                  {locationState === 'skipped' && <p className="mt-2 text-xs text-[#717589]">No problem — curated suggestions will be used.</p>}
+                  {locationState === 'ready' && <p className="mt-2 flex items-center gap-1 text-xs font-semibold text-[#277865]" role="status" data-testid="status-location-ready"><ShieldCheck size={13} /> Ready for nearby suggestions</p>}
+                  {locationState === 'unavailable' && <p className="mt-2 text-xs text-[#A83F31]" role="status" data-testid="status-location-unavailable">Location wasn’t available. You can still start with curated ideas.</p>}
+                  {locationState === 'skipped' && <p className="mt-2 text-xs text-[#717589]" role="status" data-testid="status-location-skipped">No problem — curated suggestions will be used.</p>}
                 </div>
               </div>
             </div>
+            {createRoom.isError && <p className="max-w-md rounded-xl border border-[#F1B1A6] bg-[#FFD9D3]/70 px-3 py-2 text-xs font-bold text-[#A83F31]" role="alert" data-testid="status-start-room-error">We couldn't start that room. Try again in a moment.</p>}
             <span className="inline-flex items-center gap-1.5 font-mono text-[11px] uppercase tracking-[.12em] text-[#8A8D9B]"><Clock3 size={13} /> takes 60 seconds</span>
           </form>
 
@@ -118,7 +121,7 @@ export function HomePage() {
           </div>
         </section>
 
-        <section className="relative min-h-[430px] sm:min-h-[500px]" aria-label="How PlanJam turns opinions into a plan">
+        <section className="relative min-h-[400px] sm:min-h-[500px]" aria-label="How PlanJam turns opinions into a plan">
           <div className="absolute left-[6%] top-[5%] h-20 w-20 rounded-[28px] border-2 border-[#27304C] bg-[#FFE48B] rotate-12 sm:h-28 sm:w-28" />
           <div className="absolute right-[4%] top-[8%] h-16 w-16 rounded-full border-2 border-[#27304C] bg-[#B7DBD7] sm:h-24 sm:w-24" />
           <div className="absolute bottom-[7%] left-[3%] h-20 w-20 rounded-[50%_50%_45%_45%] border-2 border-[#27304C] bg-[#FFB59F] rotate-[-16deg] sm:h-28 sm:w-28" />
