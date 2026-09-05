@@ -140,7 +140,7 @@ export function PreferencesPhase({ room }: { room: RoomState }) {
             </p>
           </div>
           <RoomShare slug={room.slug} />
-          <Roster participants={room.participants} isHost={isHost} />
+           <Roster participants={room.participants} capacity={room.capacity} />
           
           <div className="rounded-3xl border-2 border-[#27304C] bg-[#27304C] p-5 text-[#FFF7E8] shadow-[6px_6px_0_#F26F52]">
             <h3 className="mb-2 font-display text-lg font-bold text-[#FFF7E8]">Next Steps</h3>

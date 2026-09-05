@@ -15,6 +15,8 @@ import {
 type VoteValue = "love" | "works" | "no";
 type CatalogPlan = { id: string; name: string; detail: string; category: Activity; budget: Budget; distance: Distance; traits: HardNo[] };
 
+export const ROOM_CAPACITY = 10;
+
 const catalog: CatalogPlan[] = [
   { id: "ramen", name: "Cozy Ramen Dinner", detail: "A quiet neighborhood bowl night.", category: "food", budget: "1000", distance: "nearby", traits: ["spicy-food"] },
   { id: "brunch", name: "Sunny Brunch", detail: "Relaxed café plates and conversation.", category: "food", budget: "1500", distance: "5km", traits: [] },
@@ -110,7 +112,7 @@ export async function roomState(room: typeof roomsTable.$inferSelect, participan
     ? [...voteTotals].sort((a, b) => b.score - a.score || a.planId.localeCompare(b.planId))[0].planId
     : null;
   return {
-    slug: room.slug, phase: room.phase, expiresAt: room.expiresAt,
+    slug: room.slug, phase: room.phase, expiresAt: room.expiresAt, capacity: ROOM_CAPACITY,
     participants: participants.map((p) => ({ id: p.id, name: p.name, preferencesSubmitted: preferences.some((pref) => pref.participantId === p.id), votesSubmitted: room.shortlist.length > 0 && votes.filter((vote) => vote.participantId === p.id).length === room.shortlist.length })),
     shortlist, voteTotals, winner, viewerParticipantId: viewer?.id ?? null, isHost: isHost || null,
     viewerPreferences: viewer ? preferences.find((pref) => pref.participantId === viewer.id) ?? null : null,
@@ -162,7 +164,7 @@ export async function joinRoom(slug: string, displayName: string) {
     if (room.expiresAt <= new Date()) throw new RoomError(410, "Room has expired");
     if (room.phase !== "preferences") throw new RoomError(409, "Joining is only allowed while preferences are open");
     const members = await tx.select().from(participantsTable).where(eq(participantsTable.roomId, room.id));
-    if (members.length >= 4) throw new RoomError(409, "Room is full");
+     if (members.length >= ROOM_CAPACITY) throw new RoomError(409, "Room is full");
     const [existing] = await tx.select({ id: participantsTable.id }).from(participantsTable)
       .where(and(eq(participantsTable.roomId, room.id), sql`lower(${participantsTable.name}) = lower(${name})`));
     if (existing) throw new RoomError(409, "That participant name is already in use in this room");

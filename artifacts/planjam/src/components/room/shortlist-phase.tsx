@@ -65,7 +65,7 @@ export function ShortlistPhase({ room }: { room: RoomState }) {
                 </div>
               </div>
               <div className="mt-6">
-                <Roster participants={room.participants} />
+                <Roster participants={room.participants} capacity={room.capacity} />
               </div>
             </div>
             

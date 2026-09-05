@@ -114,7 +114,7 @@ export function HomePage() {
                 </span>
               ))}
             </div>
-            <span>four friends. one shared yes.</span>
+               <span>up to ten friends. one shared yes.</span>
           </div>
         </section>
 

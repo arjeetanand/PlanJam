@@ -187,11 +187,12 @@ components:
       properties: { planId: { type: string }, love: { type: number }, works: { type: number }, no: { type: number }, score: { type: number } }
     RoomState:
       type: object
-      required: [slug, phase, expiresAt, participants, shortlist, voteTotals, winner, viewerPreferences, viewerVotes, venueStatus]
+      required: [slug, phase, expiresAt, capacity, participants, shortlist, voteTotals, winner, viewerPreferences, viewerVotes, venueStatus]
       properties:
         slug: { type: string }
         phase: { type: string, enum: [preferences, shortlist, voting, final] }
         expiresAt: { type: string, format: date-time }
+        capacity: { type: number, minimum: 2, maximum: 10 }
         participants: { type: array, items: { $ref: "#/components/schemas/Participant" } }
         shortlist: { type: array, items: { $ref: "#/components/schemas/Plan" } }
         voteTotals: { type: array, items: { $ref: "#/components/schemas/VoteTotal" } }

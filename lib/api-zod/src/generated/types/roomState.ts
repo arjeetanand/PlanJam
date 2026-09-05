@@ -17,6 +17,11 @@ export interface RoomState {
   slug: string;
   phase: RoomStatePhase;
   expiresAt: Date;
+  /**
+     * @minimum 2
+     * @maximum 10
+     */
+  capacity: number;
   participants: Participant[];
   shortlist: Plan[];
   voteTotals: VoteTotal[];

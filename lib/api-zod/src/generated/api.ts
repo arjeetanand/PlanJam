@@ -38,6 +38,9 @@ export const CreateRoomBody = zod.object({
 }).optional()
 })
 
+export const createRoomResponseOneCapacityMin = 2;
+export const createRoomResponseOneCapacityMax = 10;
+
 export const createRoomResponseOneShortlistItemVenueMapsUrlRegExp = new RegExp('^https://www\\.google\\.com/maps');
 
 
@@ -45,6 +48,7 @@ export const CreateRoomResponse = zod.object({
   "slug": zod.string(),
   "phase": zod.enum(['preferences', 'shortlist', 'voting', 'final']),
   "expiresAt": zod.coerce.date(),
+  "capacity": zod.number().min(createRoomResponseOneCapacityMin).max(createRoomResponseOneCapacityMax),
   "participants": zod.array(zod.object({
   "id": zod.string(),
   "name": zod.string(),
@@ -108,6 +112,9 @@ export const JoinRoomBody = zod.object({
   "name": zod.string().min(1).max(joinRoomBodyNameMax)
 })
 
+export const joinRoomResponseOneCapacityMin = 2;
+export const joinRoomResponseOneCapacityMax = 10;
+
 export const joinRoomResponseOneShortlistItemVenueMapsUrlRegExp = new RegExp('^https://www\\.google\\.com/maps');
 
 
@@ -115,6 +122,7 @@ export const JoinRoomResponse = zod.object({
   "slug": zod.string(),
   "phase": zod.enum(['preferences', 'shortlist', 'voting', 'final']),
   "expiresAt": zod.coerce.date(),
+  "capacity": zod.number().min(joinRoomResponseOneCapacityMin).max(joinRoomResponseOneCapacityMax),
   "participants": zod.array(zod.object({
   "id": zod.string(),
   "name": zod.string(),
@@ -169,6 +177,9 @@ export const GetRoomStateParams = zod.object({
   "slug": zod.coerce.string().regex(getRoomStatePathSlugRegExp)
 })
 
+export const getRoomStateResponseCapacityMin = 2;
+export const getRoomStateResponseCapacityMax = 10;
+
 export const getRoomStateResponseShortlistItemVenueMapsUrlRegExp = new RegExp('^https://www\\.google\\.com/maps');
 
 
@@ -176,6 +187,7 @@ export const GetRoomStateResponse = zod.object({
   "slug": zod.string(),
   "phase": zod.enum(['preferences', 'shortlist', 'voting', 'final']),
   "expiresAt": zod.coerce.date(),
+  "capacity": zod.number().min(getRoomStateResponseCapacityMin).max(getRoomStateResponseCapacityMax),
   "participants": zod.array(zod.object({
   "id": zod.string(),
   "name": zod.string(),
@@ -235,6 +247,9 @@ export const UpdateRoomPreferencesBody = zod.object({
   "hardNos": zod.array(zod.enum(['crowds', 'long-drives', 'loud-venues', 'spicy-food', 'late-nights']))
 })
 
+export const updateRoomPreferencesResponseCapacityMin = 2;
+export const updateRoomPreferencesResponseCapacityMax = 10;
+
 export const updateRoomPreferencesResponseShortlistItemVenueMapsUrlRegExp = new RegExp('^https://www\\.google\\.com/maps');
 
 
@@ -242,6 +257,7 @@ export const UpdateRoomPreferencesResponse = zod.object({
   "slug": zod.string(),
   "phase": zod.enum(['preferences', 'shortlist', 'voting', 'final']),
   "expiresAt": zod.coerce.date(),
+  "capacity": zod.number().min(updateRoomPreferencesResponseCapacityMin).max(updateRoomPreferencesResponseCapacityMax),
   "participants": zod.array(zod.object({
   "id": zod.string(),
   "name": zod.string(),
@@ -298,6 +314,9 @@ export const UpdateRoomVotesBody = zod.object({
   "votes": zod.record(zod.string(), zod.enum(['love', 'works', 'no']))
 })
 
+export const updateRoomVotesResponseCapacityMin = 2;
+export const updateRoomVotesResponseCapacityMax = 10;
+
 export const updateRoomVotesResponseShortlistItemVenueMapsUrlRegExp = new RegExp('^https://www\\.google\\.com/maps');
 
 
@@ -305,6 +324,7 @@ export const UpdateRoomVotesResponse = zod.object({
   "slug": zod.string(),
   "phase": zod.enum(['preferences', 'shortlist', 'voting', 'final']),
   "expiresAt": zod.coerce.date(),
+  "capacity": zod.number().min(updateRoomVotesResponseCapacityMin).max(updateRoomVotesResponseCapacityMax),
   "participants": zod.array(zod.object({
   "id": zod.string(),
   "name": zod.string(),
@@ -361,6 +381,9 @@ export const UpdateRoomPhaseBody = zod.object({
   "phase": zod.enum(['shortlist', 'voting', 'final'])
 })
 
+export const updateRoomPhaseResponseCapacityMin = 2;
+export const updateRoomPhaseResponseCapacityMax = 10;
+
 export const updateRoomPhaseResponseShortlistItemVenueMapsUrlRegExp = new RegExp('^https://www\\.google\\.com/maps');
 
 
@@ -368,6 +391,7 @@ export const UpdateRoomPhaseResponse = zod.object({
   "slug": zod.string(),
   "phase": zod.enum(['preferences', 'shortlist', 'voting', 'final']),
   "expiresAt": zod.coerce.date(),
+  "capacity": zod.number().min(updateRoomPhaseResponseCapacityMin).max(updateRoomPhaseResponseCapacityMax),
   "participants": zod.array(zod.object({
   "id": zod.string(),
   "name": zod.string(),

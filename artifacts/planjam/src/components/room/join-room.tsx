@@ -23,7 +23,7 @@ export function JoinRoom({ room }: { room: RoomState }) {
     });
   };
 
-  const isFull = room.participants.length >= 4;
+  const isFull = room.participants.length >= room.capacity;
   const isClosed = room.phase !== 'preferences';
   const cannotJoin = isFull || isClosed;
 
@@ -41,7 +41,7 @@ export function JoinRoom({ room }: { room: RoomState }) {
           
           <div className="my-6 flex flex-wrap gap-4 text-sm font-semibold text-[#6A6E80]">
             <span className="flex items-center gap-1.5 rounded-full border border-[#D9D7D0] bg-[#FFFDF5] px-3 py-1.5">
-              <Users size={16} className="text-[#37A28C]" /> {room.participants.length}/4 joined
+              <Users size={16} className="text-[#37A28C]" /> {room.participants.length}/{room.capacity} joined
             </span>
             {room.participants.length > 0 && (
               <span className="flex items-center gap-1.5 rounded-full border border-[#D9D7D0] bg-[#FFFDF5] px-3 py-1.5">
