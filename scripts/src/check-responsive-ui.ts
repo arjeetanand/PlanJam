@@ -31,9 +31,22 @@ const chromiumPath = process.env.CHROMIUM_PATH ?? "/repl/tools/bin/chromium";
 const debugPort = Number(process.env.CHROMIUM_DEBUG_PORT ?? "9229");
 const viewports = [320, 375, 768, 1024, 1440];
 const marker = Date.now().toString(36);
+let currentViewport = 1440;
+let currentCheckLabel = `startup @ ${currentViewport}px`;
+const browserIssues: string[] = [];
+const expectedFailedRequestFragments = new Set<string>();
+const requestUrls = new Map<string, string>();
 
 function assert(condition: unknown, message: string): asserts condition {
   if (!condition) throw new Error(message);
+}
+
+function recordBrowserIssue(event: string, message: string): void {
+  browserIssues.push(`${currentCheckLabel} — ${event}: ${message}`);
+}
+
+function isExpectedFailedRequest(url: string): boolean {
+  return [...expectedFailedRequestFragments].some((fragment) => url.includes(fragment));
 }
 
 function sleep(milliseconds: number): Promise<void> {
@@ -114,6 +127,7 @@ class CdpPage {
     const page = new CdpPage(socket);
     await page.send("Page.enable");
     await page.send("Runtime.enable");
+    await page.send("Network.enable");
     return page;
   }
 
@@ -316,6 +330,8 @@ async function assertAcrossViewports(
   widths = viewports,
 ): Promise<void> {
   for (const width of widths) {
+    currentViewport = width;
+    currentCheckLabel = `${label} @ ${width}px`;
     await page.setViewport(width);
     try {
       await check(width);
@@ -330,7 +346,42 @@ async function assertAcrossViewports(
 async function main(): Promise<void> {
   await assertWorkflowsReady();
   const { page, process: browserProcess } = await startBrowser();
+  page.on("Runtime.consoleAPICalled", (params) => {
+    if (String(params.type ?? "") !== "error") return;
+    const args = Array.isArray(params.args) ? params.args : [];
+    const message = args.map((argument) => {
+      const value = argument as JsonRecord;
+      return String(value.description ?? value.value ?? "");
+    }).join(" ");
+    recordBrowserIssue("console.error", message || "Browser console error");
+  });
+  page.on("Runtime.exceptionThrown", (params) => {
+    const details = (params.exceptionDetails ?? {}) as JsonRecord;
+    const exception = (details.exception ?? {}) as JsonRecord;
+    recordBrowserIssue("uncaught exception", String(exception.description ?? details.text ?? "Unknown JavaScript exception"));
+  });
+  page.on("Network.requestWillBeSent", (params) => {
+    const requestId = String(params.requestId ?? "");
+    const request = (params.request ?? {}) as JsonRecord;
+    const url = String(request.url ?? "");
+    if (requestId && url) requestUrls.set(requestId, url);
+  });
+  page.on("Network.loadingFailed", (params) => {
+    const url = requestUrls.get(String(params.requestId ?? "")) ?? "unknown URL";
+    const errorText = String(params.errorText ?? "Unknown request failure");
+    const canceled = params.canceled === true || errorText === "net::ERR_ABORTED";
+    if (canceled || isExpectedFailedRequest(url)) return;
+    recordBrowserIssue("failed request", `${errorText} (${url})`);
+  });
+  page.on("Network.responseReceived", (params) => {
+    const response = (params.response ?? {}) as JsonRecord;
+    const status = Number(response.status ?? 0);
+    const url = String(response.url ?? "");
+    if (status < 400 || isExpectedFailedRequest(url)) return;
+    recordBrowserIssue("HTTP error response", `${status} ${url}`);
+  });
   const entryRoom = await createRoom(`Responsive Join ${marker}`);
+  expectedFailedRequestFragments.add(`/api/rooms/${entryRoom.slug}/state`);
   const preferencesRoom = await preparePreferencesRoom();
   const shortlistRoom = await prepareRoomAtPhase("shortlist", "Shortlist");
   const votingRoom = await prepareRoomAtPhase("voting", "Voting");
@@ -352,13 +403,17 @@ async function main(): Promise<void> {
       await assertVisible(page, '[data-testid="room-join-capacity"]', "join room");
     });
 
+    currentCheckLabel = `room loading state @ ${currentViewport}px`;
     await page.send("Fetch.enable", { patterns: [{ urlPattern: "*api/rooms/*/state*", requestStage: "Request" }] });
     await page.navigate(`${webOrigin}/room/${entryRoom.slug}`);
     await page.waitFor('[data-testid="status-room-loading"]', 3000);
     console.log("PASS room loading state");
     await page.send("Fetch.disable");
 
-    await page.navigate(`${webOrigin}/room/does-not-exist-${marker}`);
+    const invalidRoomSlug = `does-not-exist-${marker}`;
+    expectedFailedRequestFragments.add(`/api/rooms/${invalidRoomSlug}/state`);
+    currentCheckLabel = `room error state @ ${currentViewport}px`;
+    await page.navigate(`${webOrigin}/room/${invalidRoomSlug}`);
     await page.waitFor('[data-testid="status-room-error"]');
     await assertVisible(page, '[data-testid="button-retry-room"]', "room error state");
     console.log("PASS room error state");
@@ -374,6 +429,7 @@ async function main(): Promise<void> {
       await assertVisible(page, '[data-testid="status-next-steps"]', "preferences phase next steps");
     });
 
+    currentCheckLabel = `copy-link feedback @ ${currentViewport}px`;
     await page.click('[data-testid="button-copy-link"]');
     await page.waitFor('[data-testid="status-copy-link"]');
     const copyStatus = await page.run<string>(() => document.querySelector('[data-testid="status-copy-link"]')?.textContent ?? "");
@@ -413,7 +469,10 @@ async function main(): Promise<void> {
       await assertVisible(page, '[data-testid="room-capacity-message"]', "final phase invite card");
     });
 
-    console.log("PASS responsive PlanJam browser regression suite");
+    if (browserIssues.length > 0) {
+      throw new Error(`Browser issues detected:\n${browserIssues.map((issue) => `- ${issue}`).join("\n")}`);
+    }
+    console.log("PASS responsive PlanJam browser regression suite with no browser issues");
   } finally {
     await page.close();
     browserProcess.kill();
