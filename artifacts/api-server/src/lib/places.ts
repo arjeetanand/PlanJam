@@ -106,6 +106,21 @@ function dominantActivity(preferences: VenueSearchPreferences[]): Activity {
     .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))[0][0];
 }
 
+function activityCandidates(preferences: VenueSearchPreferences[]): Activity[] {
+  const counts = new Map<Activity, number>();
+  for (const preference of preferences) counts.set(preference.activity, (counts.get(preference.activity) ?? 0) + 1);
+  const hardNos = new Set(preferences.flatMap((preference) => preference.hardNos));
+  return [...counts.entries()]
+    .filter(([activity]) => {
+      if (activity === "party" && (hardNos.has("crowds") || hardNos.has("loud-venues") || hardNos.has("late-nights"))) return false;
+      if (activity === "games" && (hardNos.has("crowds") || hardNos.has("loud-venues"))) return false;
+      return true;
+    })
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+    .map(([activity]) => activity)
+    .slice(0, 3);
+}
+
 function safeMapsUrl(place: GooglePlace): string | undefined {
   if (place.googleMapsUri?.startsWith("https://www.google.com/maps/")) return place.googleMapsUri;
   if (!place.id) return undefined;
@@ -120,10 +135,11 @@ export async function searchNearbyVenues(
   const key = process.env.GOOGLE_MAPS_API_KEY;
   if (!key) return { status: "fallback-provider-unavailable", plans: [] };
 
-  const activity = dominantActivity(preferences);
+  const activities = activityCandidates(preferences);
+  const fallbackActivity = activities[0] ?? dominantActivity(preferences);
   const radius = radiusFor(preferences);
   const cacheKey = createHash("sha256")
-    .update(`${lat.toFixed(3)}:${lng.toFixed(3)}:${activity}:${radius}:${preferences.map((p) => `${p.budget}:${p.hardNos.sort().join(",")}`).sort().join("|")}`)
+    .update(`${lat.toFixed(3)}:${lng.toFixed(3)}:${activities.join(",")}:${radius}:${preferences.map((p) => `${p.activity}:${p.budget}:${p.hardNos.sort().join(",")}`).sort().join("|")}`)
     .digest("hex");
   const cached = cache.get(cacheKey);
   if (cached && cached.expires > Date.now()) return { status: "nearby-results", plans: cached.plans };
@@ -136,41 +152,52 @@ export async function searchNearbyVenues(
       "X-Goog-Api-Key": key,
       "X-Goog-FieldMask": "places.id,places.displayName,places.formattedAddress,places.primaryTypeDisplayName,places.location,places.rating,places.currentOpeningHours.openNow,places.googleMapsUri,places.priceLevel",
     };
-    const nearbyResponse = await fetch("https://places.googleapis.com/v1/places:searchNearby", {
-      method: "POST",
-      signal: controller.signal,
-      headers,
-      body: JSON.stringify({
-        includedPrimaryTypes: placeTypesFor(activity, preferences),
-        maxResultCount: MAX_RESULTS,
-        rankPreference: "POPULARITY",
-        locationRestriction: { circle: { center: { latitude: lat, longitude: lng }, radius } },
-      }),
-    });
-    if (!nearbyResponse.ok) return { status: "fallback-provider-unavailable", plans: [] };
-    let data = await nearbyResponse.json() as { places?: GooglePlace[] };
-
-    if (!data.places?.length) {
-      const hardNos = new Set(preferences.flatMap((preference) => preference.hardNos));
-      const textQuery = activity === "food" && hardNos.has("spicy-food")
-        ? "cafes and bakeries"
-        : ACTIVITY_QUERIES[activity];
-      const textResponse = await fetch("https://places.googleapis.com/v1/places:searchText", {
+    const places: { activity: Activity; place: GooglePlace }[] = [];
+    let providerFailed = false;
+    for (const activity of activities.length ? activities : [fallbackActivity]) {
+      const nearbyResponse = await fetch("https://places.googleapis.com/v1/places:searchNearby", {
         method: "POST",
         signal: controller.signal,
         headers,
         body: JSON.stringify({
-          textQuery,
+          includedPrimaryTypes: placeTypesFor(activity, preferences),
           maxResultCount: MAX_RESULTS,
-          rankPreference: "DISTANCE",
-          locationBias: { circle: { center: { latitude: lat, longitude: lng }, radius } },
+          rankPreference: "POPULARITY",
+          locationRestriction: { circle: { center: { latitude: lat, longitude: lng }, radius } },
         }),
       });
-      if (!textResponse.ok) return { status: "fallback-provider-unavailable", plans: [] };
-      data = await textResponse.json() as { places?: GooglePlace[] };
+      if (!nearbyResponse.ok) {
+        providerFailed = true;
+        continue;
+      }
+      let data = await nearbyResponse.json() as { places?: GooglePlace[] };
+
+      if (!data.places?.length) {
+        const hardNos = new Set(preferences.flatMap((preference) => preference.hardNos));
+        const textQuery = activity === "food" && hardNos.has("spicy-food")
+          ? "cafes and bakeries"
+          : ACTIVITY_QUERIES[activity];
+        const textResponse = await fetch("https://places.googleapis.com/v1/places:searchText", {
+          method: "POST",
+          signal: controller.signal,
+          headers,
+          body: JSON.stringify({
+            textQuery,
+            maxResultCount: MAX_RESULTS,
+            rankPreference: "DISTANCE",
+            locationBias: { circle: { center: { latitude: lat, longitude: lng }, radius } },
+          }),
+        });
+        if (!textResponse.ok) {
+          providerFailed = true;
+          continue;
+        }
+        data = await textResponse.json() as { places?: GooglePlace[] };
+      }
+      for (const place of data.places ?? []) places.push({ activity, place });
     }
 
-    const plans = (data.places ?? []).flatMap((place): VenuePlan[] => {
+    const plans = places.flatMap(({ activity, place }): VenuePlan[] => {
       const placeLat = place.location?.latitude;
       const placeLng = place.location?.longitude;
       const mapsUrl = safeMapsUrl(place);
@@ -209,11 +236,22 @@ export async function searchNearbyVenues(
           mapsUrl,
         },
       }];
-    }).sort((a, b) => b.matchPercent - a.matchPercent || a.id.localeCompare(b.id)).slice(0, 3);
+    }).sort((a, b) => b.matchPercent - a.matchPercent || a.id.localeCompare(b.id));
 
-    if (!plans.length) return { status: "fallback-no-results", plans: [] };
-    cache.set(cacheKey, { expires: Date.now() + CACHE_TTL_MS, plans });
-    return { status: "nearby-results", plans };
+    if (!plans.length) return { status: providerFailed ? "fallback-provider-unavailable" : "fallback-no-results", plans: [] };
+    const selected: VenuePlan[] = [];
+    const categories = [...new Set(plans.map((plan) => plan.category))];
+    for (const category of categories) {
+      const plan = plans.find((candidate) => candidate.category === category);
+      if (plan) selected.push(plan);
+    }
+    for (const plan of plans) {
+      if (selected.length >= 3) break;
+      if (!selected.some((candidate) => candidate.id === plan.id)) selected.push(plan);
+    }
+    const result = selected.slice(0, 3);
+    cache.set(cacheKey, { expires: Date.now() + CACHE_TTL_MS, plans: result });
+    return { status: "nearby-results", plans: result };
   } catch {
     return { status: "fallback-provider-unavailable", plans: [] };
   } finally {
