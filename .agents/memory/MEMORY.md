@@ -2,3 +2,4 @@
 - [GitHub connector write gateway](github-write-gateway.md) — GitHub reads work, but connector POST/PUT writes may be blocked before reaching GitHub; verify the write path before publishing.
 - [Keyboard regression fixtures](keyboard-regression-fixtures.md) — Target controls that are rendered and enabled in each prepared phase to avoid false focus-trap failures.
 - [Replit pnpm runtime pins](replit-pnpm-runtime-pins.md) — Workspace packageManager pins can trigger a failing self-install loop; let Replit manage pnpm.
+- [Native share payloads](native-share-payloads.md) — Send only the canonical URL when share targets must produce a paste-safe invite.

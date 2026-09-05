@@ -60,7 +60,6 @@ export function RoomShare({ slug, participantCount, capacity }: { slug: string; 
     try {
       await navigator.share({
         title: 'PlanJam Hangout Invite',
-        text: 'Join our room and help pick what we do together!',
         url: shareUrl,
       });
     } catch {
