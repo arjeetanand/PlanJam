@@ -40,6 +40,18 @@ function sleep(milliseconds: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, milliseconds));
 }
 
+async function assertWorkflowReady(label: string, url: string, startupHint: string): Promise<void> {
+  let response: Response;
+  try {
+    response = await fetch(url);
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    throw new Error(`SETUP ${label} workflow is unavailable at ${url}: ${detail}. ${startupHint}`);
+  }
+  if (!response.ok) {
+    throw new Error(`SETUP ${label} workflow returned ${response.status} from ${url}. ${startupHint}`);
+  }
+}
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const response = await fetch(`${apiOrigin}${path}`, {
     ...init,
@@ -305,12 +317,18 @@ async function assertAcrossViewports(
 ): Promise<void> {
   for (const width of widths) {
     await page.setViewport(width);
-    await check(width);
+    try {
+      await check(width);
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : String(error);
+      throw new Error(`${label} at ${width}px failed: ${detail}`);
+    }
     console.log(`PASS ${label} at ${width}px`);
   }
 }
 
 async function main(): Promise<void> {
+  await assertWorkflowsReady();
   const { page, process: browserProcess } = await startBrowser();
   const entryRoom = await createRoom(`Responsive Join ${marker}`);
   const preferencesRoom = await preparePreferencesRoom();
@@ -406,3 +424,20 @@ main().catch((error: unknown) => {
   console.error(error instanceof Error ? error.message : error);
   process.exitCode = 1;
 });
+
+async function assertWorkflowsReady(): Promise<void> {
+  console.log(`SETUP PlanJam workflow: ${webOrigin}`);
+  console.log(`SETUP API workflow: ${apiOrigin}/healthz`);
+  await Promise.all([
+    assertWorkflowReady(
+      "PlanJam",
+      `${webOrigin}/`,
+      "Start the existing artifacts/planjam: web workflow before running this check.",
+    ),
+    assertWorkflowReady(
+      "API",
+      `${apiOrigin}/healthz`,
+      "Start the existing artifacts/api-server: API Server workflow before running this check.",
+    ),
+  ]);
+}
